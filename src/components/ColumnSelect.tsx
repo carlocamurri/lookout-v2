@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material"
+
 import { ColumnSpec } from "pages/JobsPage"
 
 import styles from "./ColumnSelect.module.css"

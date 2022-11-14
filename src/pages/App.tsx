@@ -7,13 +7,13 @@ import "ag-grid-enterprise"
 import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 
+import { makeTestJobs } from "utils"
+
 import NavBar from "components/NavBar"
 import FakeGetJobsService from "services/mocks/FakeGetJobsService"
 import FakeGroupJobsService from "services/mocks/FakeGroupJobsService"
-import { makeTestJobs } from "utils"
 
 import JobsPage from "./JobsPage"
-
 import "./App.css"
 
 const theme = createTheme({
