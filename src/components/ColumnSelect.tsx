@@ -17,8 +17,9 @@ import {
   Typography,
 } from "@mui/material"
 
+import { ColumnSpec } from "pages/JobsPage"
+
 import styles from "./ColumnSelect.module.css"
-import { ColumnSpec } from "./JobsPage"
 
 const ITEM_HEIGHT = 54
 const MENU_PADDING = 8

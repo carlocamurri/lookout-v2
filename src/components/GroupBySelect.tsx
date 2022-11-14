@@ -3,8 +3,9 @@ import React from "react"
 import { Clear, DragIndicator } from "@mui/icons-material"
 import { Divider, FormControl, IconButton, InputLabel, MenuItem, OutlinedInput, Select } from "@mui/material"
 
+import { ColumnSpec } from "pages/JobsPage"
+
 import styles from "./GroupBySelect.module.css"
-import { ColumnSpec } from "./JobsPage"
 
 type GroupColumnProps = {
   columns: ColumnSpec[]

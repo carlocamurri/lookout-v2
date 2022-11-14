@@ -16,30 +16,12 @@ module.exports = {
   plugins: ["prettier", "eslint-plugin-import"],
   rules: {
     "prettier/prettier": [
-      "error",
+      "warn",
       {
         endOfLine: "auto",
       },
     ],
-    "import/order": [
-      "error",
-      {
-        groups: ["builtin", "external", "internal"],
-        pathGroups: [
-          {
-            pattern: "react",
-            group: "external",
-            position: "before",
-          },
-        ],
-        pathGroupsExcludedImportTypes: ["react"],
-        "newlines-between": "always",
-        alphabetize: {
-          order: "asc",
-          caseInsensitive: false,
-        },
-      },
-    ],
+    "import/order": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "react/display-name": "off",

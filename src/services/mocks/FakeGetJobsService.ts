@@ -1,6 +1,7 @@
-import { Job, JobFilter, JobKey, JobOrder } from "../../model"
-import { compareValues, mergeFilters } from "../../util"
-import { GetJobsService } from "../GetJobsService"
+import { Job, JobFilter, JobKey, JobOrder } from "model"
+import { compareValues, mergeFilters } from "utils"
+
+import { GetJobsService } from "services/GetJobsService"
 
 export default class FakeGetJobsService implements GetJobsService {
   jobs: Job[]

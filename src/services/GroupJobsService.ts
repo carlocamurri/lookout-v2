@@ -1,4 +1,4 @@
-import { JobFilter, JobGroup, JobOrder } from "../model"
+import { JobFilter, JobGroup, JobOrder } from "model"
 
 export interface GroupJobsService {
   groupJobs(

@@ -1,4 +1,4 @@
-import { Job, JobFilter, JobOrder } from "../model"
+import { Job, JobFilter, JobOrder } from "model"
 
 export interface GetJobsService {
   getJobs(

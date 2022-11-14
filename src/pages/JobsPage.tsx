@@ -4,15 +4,15 @@ import { Button, Divider, Typography } from "@mui/material"
 import { grey } from "@mui/material/colors"
 import { ColDef, IServerSideDatasource, IServerSideGetRowsParams, IServerSideGetRowsRequest } from "ag-grid-community"
 import { AgGridReact } from "ag-grid-react"
+import "react-data-grid/lib/styles.css"
 import { v4 as uuidv4 } from "uuid"
 
-import "react-data-grid/lib/styles.css"
-import ColumnSelect from "./ColumnSelect"
-import GroupBySelect from "./GroupBySelect"
+import { Job, JobFilter, JobGroup, Match } from "model"
+import ColumnSelect from "components/ColumnSelect"
+import GroupBySelect from "components/GroupBySelect"
+import { GetJobsService } from "services/GetJobsService"
+import { GroupJobsService } from "services/GroupJobsService"
 import styles from "./JobsPage.module.css"
-import { Job, JobFilter, JobGroup, Match } from "./model"
-import { GetJobsService } from "./services/GetJobsService"
-import { GroupJobsService } from "./services/GroupJobsService"
 
 const HEADING_SECTION_HEIGHT = 48
 
