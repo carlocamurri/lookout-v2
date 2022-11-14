@@ -1,6 +1,6 @@
-import { Job, JobFilter, JobGroup, JobOrder } from "./model"
-import { GetJobsService } from "./services/GetJobsService"
-import { GroupJobsService } from "./services/GroupJobsService"
+import { Job, JobFilter, JobGroup, JobOrder } from "model"
+import { GetJobsService } from "services/GetJobsService"
+import { GroupJobsService } from "services/GroupJobsService"
 
 const DEFAULT_ORDER: JobOrder = {
   direction: "DESC",

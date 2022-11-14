@@ -16,13 +16,13 @@ module.exports = {
   plugins: ["prettier", "eslint-plugin-import"],
   rules: {
     "prettier/prettier": [
-      "error",
+      "warn",
       {
         endOfLine: "auto",
       },
     ],
     "import/order": [
-      "error",
+      "warn",
       {
         groups: ["builtin", "external", "internal"],
         pathGroups: [
