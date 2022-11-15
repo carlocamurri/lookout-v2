@@ -6,11 +6,10 @@ import { AgGridReact } from "ag-grid-react"
 import { Job, JobFilter } from "model"
 import React from "react"
 import { useMemo, useState, useCallback } from "react"
-import { GetJobsService } from "services/GetJobsService"
-import { GroupJobsService } from "services/GroupJobsService"
+import GetJobsService from "services/GetJobsService"
 import ColumnSelect from "./ColumnSelect"
 import GroupBySelect from "./GroupBySelect"
-import {GroupRemove, GroupAdd, GroupAddOutlined, GroupRemoveOutlined} from "@mui/icons-material";
+import {GroupRemove, GroupAdd, GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight} from "@mui/icons-material";
 
 const defaultColumns: ColumnSpec[] = [
     { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
@@ -69,49 +68,42 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
     const columns = React.useMemo<ColumnDef<JobRow>[]>(
         () => [
             {
-                header: 'Job',
-                columns: [
-                    {
-                        accessorFn: row => row.jobId,
-                        header: 'Job ID',
-                        aggregationFn: () => '-',
-                    },
-                    {
-                        accessorFn: row => row.jobSet,
-                        header: 'Job Set',
-                        aggregationFn: () => '-',
-                    },
-                    {
-                        accessorFn: row => row.queue,
-                        header: 'Queue',
-                        aggregationFn: () => '-',
-                    },
-                ],
+                accessorFn: row => row.jobId,
+                header: 'Job ID',
+                aggregationFn: () => '-',
             },
             {
-                header: 'Info',
-                columns: [
-                    {
-                        accessorFn: row => row.state,
-                        header: 'State',
-                        aggregationFn: () => '-',
-                    },
-                    {
-                        accessorFn: row => row.cpu,
-                        header: 'CPU',
-                        aggregationFn: 'sum',
-                    },
-                    {
-                        accessorFn: row => row.memory,
-                        header: 'Memory',
-                        aggregationFn: () => 'TODO',
-                    },
-                    {
-                        accessorFn: row => row.ephemeralStorage,
-                        header: 'Ephemeral Storage',
-                        aggregationFn: () => 'TODO',
-                    },
-                ],
+                accessorFn: row => row.jobSet,
+                header: 'Job Set',
+                aggregationFn: () => '-',
+            },
+            {
+                accessorFn: row => row.queue,
+                header: 'Queue',
+                aggregationFn: () => '-',
+            },
+            {
+                accessorFn: row => row.state,
+                header: 'State',
+                aggregationFn: () => '-',
+            },
+            {
+                accessorFn: row => row.cpu,
+                header: 'CPU',
+                aggregationFn: 'sum',
+                enableGrouping: false,
+            },
+            {
+                accessorFn: row => row.memory,
+                header: 'Memory',
+                aggregationFn: () => 'TODO',
+                enableGrouping: false,
+            },
+            {
+                accessorFn: row => row.ephemeralStorage,
+                header: 'Ephemeral Storage',
+                aggregationFn: () => 'TODO',
+                enableGrouping: false,
             },
         ],
         []
@@ -122,6 +114,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
       pageIndex: 0,
       pageSize: 10,
     })
+    const [pageCount, setPageCount] = React.useState<number>(-1);
     const pagination = React.useMemo(
         () => ({
           pageIndex,
@@ -135,7 +128,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
             const filters: JobFilter[]  = [];
             const skip = pageIndex * pageSize;
             const take = pageSize;
-            const jobs = await getJobsService.getJobs(
+            const { jobs, totalJobs } = await getJobsService.getJobs(
                 filters, 
                 { field: "jobId", direction: "ASC" }, 
                 skip, 
@@ -143,6 +136,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                 undefined
             );
             setData(jobsToRows(jobs));
+            setPageCount(Math.ceil(totalJobs / pageSize));
         }
 
         fetchData().catch(console.error);
@@ -150,7 +144,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
 
     const table = useReactTable({
         data,
-        pageCount: -1, // TODO: API for total number of jobs
+        pageCount: pageCount,
         columns,
         state: {
             grouping,
@@ -239,7 +233,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                                                             },
                                                         }}
                                                     >
-                                                        {row.getIsExpanded() ? '👇' : '👉'}{' '}
+                                                        {row.getIsExpanded() ? <ExpandMore fontSize="small"/> : <KeyboardArrowRight fontSize="small"/>}{' '}
                                                         {flexRender(
                                                             cell.column.columnDef.cell,
                                                             cell.getContext()

@@ -17,6 +17,7 @@ export default class FakeGetJobsService implements GetJobsService {
     take: number,
     signal: AbortSignal | undefined,
   ): Promise<GetJobsResponse> {
+    console.log("Making GetJobs call with params:", {filters, order, skip, take, signal});
     const filtered = this.jobs.filter(mergeFilters(filters)).sort(comparator(order))
     return Promise.resolve({
       totalJobs: filtered.length,
