@@ -128,7 +128,7 @@ async function groupBy(
     return filter
   })
   try {
-    const groups = await service.groupJobs(
+    const {groups, totalGroups} = await service.groupJobs(
       filters,
       { field: "count", direction: "DESC" },
       groupField,
@@ -204,44 +204,6 @@ export default function JobsPage(props: JobsPageProps) {
     setColumns(newColumns)
   }
 
-  const toColDefs = useCallback((columnSpecs: ColumnSpec[]): ColDef[] => {
-    return columnSpecs.map((col) => {
-      const colDef: ColDef = {
-        field: col.key,
-        headerName: col.name,
-        hide: false,
-        initialHide: false,
-        suppressColumnsToolPanel: false,
-        suppressFiltersToolPanel: false,
-        enableRowGroup: col.groupable,
-      }
-      if (!col.selected) {
-        colDef.hide = true
-        colDef.initialHide = true
-        colDef.suppressColumnsToolPanel = true
-        colDef.suppressFiltersToolPanel = true
-      }
-      if (col.key === "state") {
-        colDef.minWidth = 100
-        colDef.width = 200
-      }
-      return colDef
-    })
-  }, [])
-
-  const defaultColDef: ColDef = useMemo(() => {
-    return {
-      resizable: true,
-    }
-  }, [])
-
-  const autoGroupColumnDef: ColDef = useMemo(() => {
-    return {
-      resizable: true,
-      valueFormatter: () => "HELP",
-    }
-  }, [])
-
   function addAnnotationColumn(name: string) {
     const newColumns = columns.map((col) => col)
     newColumns.push({
@@ -267,23 +229,6 @@ export default function JobsPage(props: JobsPageProps) {
       }
     }
     setColumns(newColumns)
-  }
-
-  function updateGroup(key: string, index: number) {
-    const col = columns.find((col) => col.key === key)
-    if (col === undefined || index < 0) {
-      return
-    }
-  }
-
-  function deleteGroup(index: number) {
-    if (index < 0 || index >= groups.length) {
-      return
-    }
-
-    const newGroups = Array.from(groups)
-    newGroups.splice(index, 1)
-    setGroups(newGroups)
   }
 
   return (
@@ -353,7 +298,7 @@ export default function JobsPage(props: JobsPageProps) {
           </div>
         </div>
       </div>
-      <JobsTable getJobsService={props.getJobsService} width={props.width} height={props.height} />
+      <JobsTable getJobsService={props.getJobsService} groupJobsService={props.groupJobsService} selectedColumns={columns} />
     </div>
   )
 }

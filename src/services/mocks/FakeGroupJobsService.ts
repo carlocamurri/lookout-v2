@@ -1,7 +1,7 @@
 import { Job, JobFilter, JobGroup, JobKey, JobOrder } from "model"
 import { compareValues, mergeFilters } from "utils"
 
-import GroupJobsService from "services/GroupJobsService"
+import GroupJobsService, { GroupJobsResponse } from "services/GroupJobsService"
 
 export default class FakeGroupJobsService implements GroupJobsService {
   jobs: Job[]
@@ -18,11 +18,15 @@ export default class FakeGroupJobsService implements GroupJobsService {
     skip: number,
     take: number,
     signal: AbortSignal | undefined,
-  ): Promise<JobGroup[]> {
+  ): Promise<GroupJobsResponse> {
+    console.log("GroupJobs called with params:", {filters, order, groupedField, aggregates, skip, take, signal});
     const filtered = this.jobs.filter(mergeFilters(filters))
     const groups = groupBy(filtered, groupedField)
     const sliced = groups.sort(comparator(order)).slice(skip, skip + take)
-    return Promise.resolve(sliced)
+    return Promise.resolve({
+      groups: sliced,
+      totalGroups: groups.length
+    })
   }
 }
 
@@ -56,6 +60,8 @@ function comparator(order: JobOrder): (a: JobGroup, b: JobGroup) => number {
     let accessor: (group: JobGroup) => string | number | undefined = () => undefined
     if (order.field === "count") {
       accessor = (group: JobGroup) => group.count
+    } else if (order.field === "name") {
+      accessor = (group: JobGroup) => group.name
     } else {
       accessor = (group: JobGroup) => group.aggregates[order.field]
     }

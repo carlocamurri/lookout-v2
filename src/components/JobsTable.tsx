@@ -3,13 +3,15 @@ import { grey } from "@mui/material/colors"
 import { ColumnDef, flexRender, getCoreRowModel, getExpandedRowModel, getFilteredRowModel, getGroupedRowModel, getPaginationRowModel, GroupingState, PaginationState, useReactTable } from "@tanstack/react-table"
 import { ColDef } from "ag-grid-community"
 import { AgGridReact } from "ag-grid-react"
-import { Job, JobFilter } from "model"
+import { Job, JobFilter, JobGroup, JobOrder } from "model"
 import React from "react"
 import { useMemo, useState, useCallback } from "react"
 import GetJobsService from "services/GetJobsService"
 import ColumnSelect from "./ColumnSelect"
 import GroupBySelect from "./GroupBySelect"
 import {GroupRemove, GroupAdd, GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight} from "@mui/icons-material";
+import GroupJobsService from "services/GroupJobsService"
+import { skipPartiallyEmittedExpressions } from "typescript"
 
 const defaultColumns: ColumnSpec[] = [
     { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
@@ -56,57 +58,24 @@ function jobsToRows(jobs: Job[]): JobRow[] {
   }
 
 type JobsPageProps = {
-    width: number
-    height: number
     getJobsService: GetJobsService
-    // groupJobsService: GroupJobsService
+    groupJobsService: GroupJobsService
+    selectedColumns: ColumnSpec[]
 }
-export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
+export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: JobsPageProps) => {
     const rerender = React.useReducer(() => ({}), {})[1]
     const [data, setData] = React.useState<JobRow[]>([]);
 
     const columns = React.useMemo<ColumnDef<JobRow>[]>(
-        () => [
+        () => selectedColumns.map(c => (
             {
-                accessorFn: row => row.jobId,
-                header: 'Job ID',
+                accessorKey: c.key,
+                header: c.name,
                 aggregationFn: () => '-',
-            },
-            {
-                accessorFn: row => row.jobSet,
-                header: 'Job Set',
-                aggregationFn: () => '-',
-            },
-            {
-                accessorFn: row => row.queue,
-                header: 'Queue',
-                aggregationFn: () => '-',
-            },
-            {
-                accessorFn: row => row.state,
-                header: 'State',
-                aggregationFn: () => '-',
-            },
-            {
-                accessorFn: row => row.cpu,
-                header: 'CPU',
-                aggregationFn: 'sum',
-                enableGrouping: false,
-            },
-            {
-                accessorFn: row => row.memory,
-                header: 'Memory',
-                aggregationFn: () => 'TODO',
-                enableGrouping: false,
-            },
-            {
-                accessorFn: row => row.ephemeralStorage,
-                header: 'Ephemeral Storage',
-                aggregationFn: () => 'TODO',
-                enableGrouping: false,
-            },
-        ],
-        []
+                enableGrouping: c.groupable
+            }
+        )),
+        [selectedColumns]
     )
 
     const [grouping, setGrouping] = React.useState<GroupingState>([])
@@ -125,22 +94,47 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
 
     React.useEffect(() => {
         async function fetchData() {
+            // TODO: Support filtering
             const filters: JobFilter[]  = [];
+            
             const skip = pageIndex * pageSize;
             const take = pageSize;
-            const { jobs, totalJobs } = await getJobsService.getJobs(
-                filters, 
-                { field: "jobId", direction: "ASC" }, 
-                skip, 
-                take, 
-                undefined
-            );
-            setData(jobsToRows(jobs));
-            setPageCount(Math.ceil(totalJobs / pageSize));
+
+            if (grouping?.length > 0) {
+                // TODO: Support multiple grouping
+                const order: JobOrder = { field: 'name', direction: 'ASC' };
+                const groupingField = grouping[0];
+                const {groups, totalGroups} = await groupJobsService.groupJobs(
+                    filters,
+                    order,
+                    groupingField,
+                    selectedColumns.filter(c => c.groupable).map(c => c.key),
+                    skip,
+                    take,
+                    undefined
+                )
+                const rows: JobRow[] = groups.map(group => ({
+                    rowId: group.name,
+                    [groupingField]: group.name
+                }));
+                setData(rows);
+                setPageCount(Math.ceil(totalGroups / pageSize));
+            } else {
+                const order: JobOrder = { field: "jobId", direction: 'ASC' };
+                const { jobs, totalJobs } = await getJobsService.getJobs(
+                    filters, 
+                    order, 
+                    skip, 
+                    take,
+                    undefined
+                );
+                setData(jobsToRows(jobs));
+                setPageCount(Math.ceil(totalJobs / pageSize));
+            }
         }
 
         fetchData().catch(console.error);
-    }, [pagination]);
+    }, [pagination, grouping]);
 
     const table = useReactTable({
         data,
@@ -169,7 +163,6 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                             {headerGroup.headers.map(header => {
                                 return (
                                     <TableCell key={header.id} 
-                                        // colSpan={header.colSpan}
                                     >
                                         {header.isPlaceholder ? null : (
                                             <div>
@@ -206,20 +199,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                             <TableRow key={row.id}>
                                 {row.getVisibleCells().map(cell => {
                                     return (
-                                        <TableCell
-                                            key={cell.id}
-                                            {...{
-                                                style: {
-                                                    background: cell.getIsGrouped()
-                                                        ? '#0aff0082'
-                                                        : cell.getIsAggregated()
-                                                            ? '#ffa50078'
-                                                            : cell.getIsPlaceholder()
-                                                                ? '#ff000042'
-                                                                : 'white',
-                                                },
-                                            }}
-                                        >
+                                        <TableCell key={cell.id}>
                                             {cell.getIsGrouped() ? (
                                                 // If it's a grouped cell, add an expander and row count
                                                 <>

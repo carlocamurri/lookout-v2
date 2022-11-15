@@ -9,5 +9,10 @@ export default interface GroupJobsService {
     skip: number,
     take: number,
     signal: AbortSignal | undefined,
-  ): Promise<JobGroup[]>
+  ): Promise<GroupJobsResponse>
+}
+
+export type GroupJobsResponse = {
+  totalGroups: number
+  groups: JobGroup[]
 }
