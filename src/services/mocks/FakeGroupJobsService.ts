@@ -22,7 +22,6 @@ export default class FakeGroupJobsService implements GroupJobsService {
     const filtered = this.jobs.filter(mergeFilters(filters))
     const groups = groupBy(filtered, groupedField)
     const sliced = groups.sort(comparator(order)).slice(skip, skip + take)
-    console.log(sliced)
     return Promise.resolve(sliced)
   }
 }
