@@ -7,11 +7,11 @@ import { AgGridReact } from "ag-grid-react"
 import "react-data-grid/lib/styles.css"
 import { v4 as uuidv4 } from "uuid"
 
-import { Job, JobFilter, JobGroup, Match } from "model"
+import { Job, JobFilter, JobGroup } from "model"
 import ColumnSelect from "components/ColumnSelect"
 import GroupBySelect from "components/GroupBySelect"
-import { GetJobsService } from "services/GetJobsService"
-import { GroupJobsService } from "services/GroupJobsService"
+import GetJobsService from "services/GetJobsService"
+import GroupJobsService from "services/GroupJobsService"
 import styles from "./JobsPage.module.css"
 
 const HEADING_SECTION_HEIGHT = 48
@@ -165,7 +165,14 @@ function createDatasource(getJobsService: GetJobsService, groupJobsService: Grou
             match: "exact",
           }
         })
-        const jobs = await getJobsService.getJobs(filters, { field: "jobId", direction: "ASC" }, skip, take, undefined)
+        const getJobsResponse = await getJobsService.getJobs(
+          filters,
+          { field: "jobId", direction: "ASC" },
+          skip,
+          take,
+          undefined,
+        )
+        const jobs = getJobsResponse.jobs
         params.success({
           rowData: jobsToRows(jobs),
           rowCount: jobs.length < take ? skip + jobs.length : -1,

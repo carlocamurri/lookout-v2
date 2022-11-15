@@ -1,7 +1,7 @@
 import { Job, JobFilter, JobGroup, JobOrder } from "model"
 
-import { GetJobsService } from "services/GetJobsService"
-import { GroupJobsService } from "services/GroupJobsService"
+import GetJobsService from "services/GetJobsService"
+import GroupJobsService from "services/GroupJobsService"
 
 const DEFAULT_ORDER: JobOrder = {
   direction: "DESC",
@@ -176,13 +176,14 @@ export class GroupTree implements Tree {
   }
 
   async groupCanBeLoaded(groupValues: string[]): Promise<boolean> {
-    const jobs = await this.getJobsService.getJobs(
+    const getJobsResponse = await this.getJobsService.getJobs(
       this.filtersForGroupValues(groupValues),
       DEFAULT_JOB_ORDER,
       0,
       1,
       undefined,
     )
+    const jobs = getJobsResponse.jobs
     return jobs.length > 0
   }
 
