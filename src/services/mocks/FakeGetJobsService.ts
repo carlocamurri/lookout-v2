@@ -19,7 +19,7 @@ export default class FakeGetJobsService implements GetJobsService {
   ): Promise<GetJobsResponse> {
     const filtered = this.jobs.filter(mergeFilters(filters)).sort(comparator(order))
     return Promise.resolve({
-      total: filtered.length,
+      totalJobs: filtered.length,
       jobs: filtered.slice(skip, skip + take),
     })
   }

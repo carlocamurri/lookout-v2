@@ -11,6 +11,6 @@ export default interface GetJobsService {
 }
 
 export type GetJobsResponse = {
-  total: number
+  totalJobs: number
   jobs: Job[]
 }
