@@ -4,7 +4,7 @@ import { Button, Divider, Typography } from "@mui/material"
 import { grey } from "@mui/material/colors"
 import { ColDef, IServerSideDatasource, IServerSideGetRowsParams, IServerSideGetRowsRequest } from "ag-grid-community"
 import { AgGridReact } from "ag-grid-react"
-import "react-data-grid/lib/styles.css"
+// import "react-data-grid/lib/styles.css"
 import { v4 as uuidv4 } from "uuid"
 
 import { Job, JobFilter, JobGroup, Match } from "model"
@@ -13,6 +13,7 @@ import GroupBySelect from "components/GroupBySelect"
 import { GetJobsService } from "services/GetJobsService"
 import { GroupJobsService } from "services/GroupJobsService"
 import styles from "./JobsPage.module.css"
+import { JobsTable } from "components/JobsTable"
 
 const HEADING_SECTION_HEIGHT = 48
 
@@ -345,45 +346,7 @@ export default function JobsPage(props: JobsPageProps) {
           </div>
         </div>
       </div>
-      <div
-        style={{
-          width: props.width,
-          height: HEADING_SECTION_HEIGHT,
-          backgroundColor: grey.A200,
-          overflowX: "auto",
-        }}
-      >
-        <GroupBySelect groups={groups} columns={columns} onSetGroup={updateGroup} onDeleteGroup={deleteGroup} />
-      </div>
-      <div
-        className={styles.table}
-        style={{
-          width: props.width,
-          height: props.height - 2 * HEADING_SECTION_HEIGHT,
-          overflow: "auto",
-        }}
-      >
-        <div style={gridStyle} className="ag-theme-alpine">
-          <AgGridReact
-            rowSelection="multiple"
-            defaultColDef={defaultColDef}
-            columnDefs={toColDefs(columns)}
-            rowModelType="serverSide"
-            rowGroupPanelShow="always"
-            serverSideDatasource={dataSource}
-            serverSideInfiniteScroll={true}
-            getRowId={(params) => params.data.rowId}
-            autoGroupColumnDef={autoGroupColumnDef}
-            groupDisplayType="singleColumn"
-            getChildCount={(data) => {
-              if (data.count === undefined) {
-                return 0
-              }
-              return data.count
-            }}
-          />
-        </div>
-      </div>
+      <JobsTable getJobsService={props.getJobsService} width={props.width} height={props.height} />
     </div>
   )
 }
