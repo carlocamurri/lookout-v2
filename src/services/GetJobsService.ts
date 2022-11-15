@@ -1,11 +1,16 @@
 import { Job, JobFilter, JobOrder } from "model"
 
-export interface GetJobsService {
+export default interface GetJobsService {
   getJobs(
     filters: JobFilter[],
     order: JobOrder,
     skip: number,
     take: number,
     signal: AbortSignal | undefined,
-  ): Promise<Job[]>
+  ): Promise<GetJobsResponse>
+}
+
+export type GetJobsResponse = {
+  total: number
+  jobs: Job[]
 }

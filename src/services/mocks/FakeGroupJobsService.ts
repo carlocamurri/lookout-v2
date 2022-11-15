@@ -1,7 +1,7 @@
 import { Job, JobFilter, JobGroup, JobKey, JobOrder } from "model"
 import { compareValues, mergeFilters } from "utils"
 
-import { GroupJobsService } from "services/GroupJobsService"
+import GroupJobsService from "services/GroupJobsService"
 
 export default class FakeGroupJobsService implements GroupJobsService {
   jobs: Job[]

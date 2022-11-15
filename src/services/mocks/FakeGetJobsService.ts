@@ -1,7 +1,7 @@
 import { Job, JobFilter, JobKey, JobOrder } from "model"
 import { compareValues, mergeFilters } from "utils"
 
-import { GetJobsService } from "services/GetJobsService"
+import GetJobsService, { GetJobsResponse } from "services/GetJobsService"
 
 export default class FakeGetJobsService implements GetJobsService {
   jobs: Job[]
@@ -16,9 +16,12 @@ export default class FakeGetJobsService implements GetJobsService {
     skip: number,
     take: number,
     signal: AbortSignal | undefined,
-  ): Promise<Job[]> {
+  ): Promise<GetJobsResponse> {
     const filtered = this.jobs.filter(mergeFilters(filters)).sort(comparator(order))
-    return Promise.resolve(filtered.slice(skip, skip + take))
+    return Promise.resolve({
+      total: filtered.length,
+      jobs: filtered.slice(skip, skip + take),
+    })
   }
 }
 
