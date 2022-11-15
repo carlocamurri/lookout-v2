@@ -1,4 +1,4 @@
-import { Typography, Divider, Button, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material"
+import { Typography, Divider, Button, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton } from "@mui/material"
 import { grey } from "@mui/material/colors"
 import { ColumnDef, flexRender, getCoreRowModel, getExpandedRowModel, getFilteredRowModel, getGroupedRowModel, getPaginationRowModel, GroupingState, PaginationState, useReactTable } from "@tanstack/react-table"
 import { ColDef } from "ag-grid-community"
@@ -10,6 +10,7 @@ import { GetJobsService } from "services/GetJobsService"
 import { GroupJobsService } from "services/GroupJobsService"
 import ColumnSelect from "./ColumnSelect"
 import GroupBySelect from "./GroupBySelect"
+import {GroupRemove, GroupAdd, GroupAddOutlined, GroupRemoveOutlined} from "@mui/icons-material";
 
 const defaultColumns: ColumnSpec[] = [
     { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
@@ -180,7 +181,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                                             <div>
                                                 {header.column.getCanGroup() ? (
                                                     // If the header can be grouped, let's add a toggle
-                                                    <button
+                                                    <IconButton size="small"
                                                         {...{
                                                             onClick: header.column.getToggleGroupingHandler(),
                                                             style: {
@@ -189,9 +190,9 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                                                         }}
                                                     >
                                                         {header.column.getIsGrouped()
-                                                            ? `🛑(${header.column.getGroupedIndex()}) `
-                                                            : `👊 `}
-                                                    </button>
+                                                            ? <><GroupRemoveOutlined fontSize="small"/> ({header.column.getGroupedIndex()})</>
+                                                            : <GroupAddOutlined fontSize="small"/>}
+                                                    </IconButton>
                                                 ) : null}{' '}
                                                 {flexRender(
                                                     header.column.columnDef.header,
@@ -228,7 +229,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                                             {cell.getIsGrouped() ? (
                                                 // If it's a grouped cell, add an expander and row count
                                                 <>
-                                                    <button
+                                                    <Button variant="text" size="small"
                                                         {...{
                                                             onClick: row.getToggleExpandedHandler(),
                                                             style: {
@@ -244,7 +245,7 @@ export const JobsTable = ({getJobsService, width, height}: JobsPageProps) => {
                                                             cell.getContext()
                                                         )}{' '}
                                                         ({row.subRows.length})
-                                                    </button>
+                                                    </Button>
                                                 </>
                                             ) : cell.getIsAggregated() ? (
                                                 // If the cell is aggregated, use the Aggregated
