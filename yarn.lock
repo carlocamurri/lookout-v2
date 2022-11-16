@@ -2783,22 +2783,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-table@npm:^8.5.27":
-  version: 8.5.27
-  resolution: "@tanstack/react-table@npm:8.5.27"
+"@tanstack/react-table@npm:^8.5.30":
+  version: 8.5.30
+  resolution: "@tanstack/react-table@npm:8.5.30"
   dependencies:
-    "@tanstack/table-core": 8.5.27
+    "@tanstack/table-core": 8.5.30
   peerDependencies:
     react: ">=16"
     react-dom: ">=16"
-  checksum: 7b58c39ebf08381c6debb5f503e224fc82fd8c1dbbd3e92c91c39d2eed8a5510c7284d00c0ded1c4f11045c57dc7af78bd6cac9de7c1b6cf8bfb5f6838f9673f
+  checksum: 0e61cd98bf68a8c5004dc80bf9ff097205ce5e48e48f72600cce0788db6987c4e770e0a97795a884c17f36647f8faf6cea5817399b1e74158c3c4ecf8c80c79a
   languageName: node
   linkType: hard
 
-"@tanstack/table-core@npm:8.5.27":
-  version: 8.5.27
-  resolution: "@tanstack/table-core@npm:8.5.27"
-  checksum: 83614456f8710496dbb5a483dc475ab4c203a6075a082b13cb29fdc182c6ec70f9556cc8a3761aa88f503233c33f68f2879eccca9e2d153b0e5cb5b42a4602bf
+"@tanstack/table-core@npm:8.5.30":
+  version: 8.5.30
+  resolution: "@tanstack/table-core@npm:8.5.30"
+  checksum: 05d5612ec417a665cb67c35eb94cada149884fc3377ec6b3850eff3081517a913a57b5725f9c609b9eada6de8b980d63bbb30a8d62111730d62aea80e184b997
   languageName: node
   linkType: hard
 
@@ -3774,33 +3774,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ag-grid-community@npm:^28.2.1":
-  version: 28.2.1
-  resolution: "ag-grid-community@npm:28.2.1"
-  checksum: f94acfd8f4f815e4f5028c8bc40f6cd06463f81eee9ea5a3450e9e580f5b682adbee86a1cec466aaa1e8c780e2606b1f1ab06455d38b62a83e768d4e479fcb38
-  languageName: node
-  linkType: hard
-
-"ag-grid-enterprise@npm:^28.2.1":
-  version: 28.2.1
-  resolution: "ag-grid-enterprise@npm:28.2.1"
-  checksum: 5f4b0bfd02c639a504b55de61b31fa62088fcc3776bedb9fd97e43a0613556a669d648431d6d8a5de59c290f2ddee044ff495bf59f431a691898d0edcee5bb81
-  languageName: node
-  linkType: hard
-
-"ag-grid-react@npm:^28.2.1":
-  version: 28.2.1
-  resolution: "ag-grid-react@npm:28.2.1"
-  dependencies:
-    prop-types: ^15.8.1
-  peerDependencies:
-    ag-grid-community: ~28.2.1
-    react: ^16.3.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.3.0 || ^17.0.0 || ^18.0.0
-  checksum: 75b6cfd891a0fd6dcd065fc69e80c9b7b20c6efee4f659714b5748f28b9d646868602770401cf840efd866b65e9e0683850842c70a95924aa6209c09bf849c15
-  languageName: node
-  linkType: hard
-
 "agent-base@npm:6, agent-base@npm:^6.0.2":
   version: 6.0.2
   resolution: "agent-base@npm:6.0.2"
@@ -4737,7 +4710,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clsx@npm:^1.1.1, clsx@npm:^1.2.1":
+"clsx@npm:^1.2.1":
   version: 1.2.1
   resolution: "clsx@npm:1.2.1"
   checksum: 30befca8019b2eb7dbad38cff6266cf543091dae2825c856a62a8ccf2c3ab9c2907c4d12b288b73101196767f66812365400a227581484a05f968b0307cfaf12
@@ -8901,7 +8874,7 @@ __metadata:
     "@mui/icons-material": ^5.10.6
     "@mui/material": ^5.10.7
     "@mui/types": ^7.2.0
-    "@tanstack/react-table": ^8.5.27
+    "@tanstack/react-table": ^8.5.30
     "@testing-library/dom": ^8.18.1
     "@testing-library/jest-dom": ^5.16.5
     "@testing-library/react": ^13.4.0
@@ -8913,9 +8886,6 @@ __metadata:
     "@types/react-dom": ^18.0.6
     "@types/react-router-dom": ^5.3.3
     "@types/uuid": ^8.3.4
-    ag-grid-community: ^28.2.1
-    ag-grid-enterprise: ^28.2.1
-    ag-grid-react: ^28.2.1
     eslint: ^8.24.0
     eslint-config-prettier: ^8.5.0
     eslint-plugin-import: ^2.26.0
@@ -8925,7 +8895,6 @@ __metadata:
     moq.ts: ^9.0.2
     prettier: ^2.7.1
     react: ^18.2.0
-    react-data-grid: ^7.0.0-beta.18
     react-dom: ^18.2.0
     react-router-dom: ^6.4.1
     react-scripts: 5.0.1
@@ -10984,18 +10953,6 @@ __metadata:
     regenerator-runtime: ^0.13.9
     whatwg-fetch: ^3.6.2
   checksum: 1bb031080af15397d6eb9c69a0c2e93799991f7197a086e4409ba719398f1256b542a3d6c9a34673d516c684eef3e8226c99b335982593851f58f65f6e43571b
-  languageName: node
-  linkType: hard
-
-"react-data-grid@npm:^7.0.0-beta.18":
-  version: 7.0.0-canary.49
-  resolution: "react-data-grid@npm:7.0.0-canary.49"
-  dependencies:
-    clsx: ^1.1.1
-  peerDependencies:
-    react: ^16.14 || ^17.0
-    react-dom: ^16.14 || ^17.0
-  checksum: fe57d441a5e56dac39a0f7e06979a27d5606515653ead31fc06f9c2fe08ebaf88ff4ab70f1565dd356b343cf4612137dea2d188a40a7e246b85dd5aa2589da04
   languageName: node
   linkType: hard
 

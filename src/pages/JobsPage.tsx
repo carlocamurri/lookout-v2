@@ -2,9 +2,6 @@ import React, { useCallback, useMemo, useState } from "react"
 
 import { Button, Divider, Typography } from "@mui/material"
 import { grey } from "@mui/material/colors"
-import { ColDef, IServerSideDatasource, IServerSideGetRowsParams, IServerSideGetRowsRequest } from "ag-grid-community"
-import { AgGridReact } from "ag-grid-react"
-// import "react-data-grid/lib/styles.css"
 import { v4 as uuidv4 } from "uuid"
 
 import { Job, JobFilter, JobGroup } from "model"
@@ -95,104 +92,99 @@ function jobGroupsToRows(
   })
 }
 
-function shouldGroup(request: IServerSideGetRowsRequest): boolean {
-  return request.rowGroupCols.length > request.groupKeys.length
-}
+// function shouldGroup(request: IServerSideGetRowsRequest): boolean {
+//   return request.rowGroupCols.length > request.groupKeys.length
+// }
 
-async function groupBy(
-  service: GroupJobsService,
-  params: IServerSideGetRowsParams,
-  skip: number,
-  take: number,
-): Promise<void> {
-  console.log(params.request.groupKeys, params.request.rowGroupCols)
-  const groupedValues = params.request.groupKeys
-  const groupFields = params.request.rowGroupCols.map((col) => col.id)
-  if (groupFields.length === 0) {
-    console.error("error when loading groups: no groups specified")
-    params.fail()
-    return
-  }
-  let groupField = groupFields[0]
-  const previouslyGrouped = []
-  for (let i = 0; i < groupedValues.length; i++) {
-    groupField = groupFields[i + 1]
-    previouslyGrouped.push(groupedValues[i])
-  }
-  const filters = previouslyGrouped.map((val, i) => {
-    const filter: JobFilter = {
-      field: groupFields[i],
-      value: val,
-      match: "exact",
-    }
-    return filter
-  })
-  try {
-    const {groups, totalGroups} = await service.groupJobs(
-      filters,
-      { field: "count", direction: "DESC" },
-      groupField,
-      [],
-      skip,
-      take,
-      undefined,
-    )
-    params.success({
-      rowData: jobGroupsToRows(groups, groupField, groupFields, previouslyGrouped),
-      rowCount: groups.length < take ? skip + groups.length : -1,
-    })
-  } catch (e) {
-    console.error(e)
-    params.fail()
-  }
-}
+// async function groupBy(
+//   service: GroupJobsService,
+//   params: IServerSideGetRowsParams,
+//   skip: number,
+//   take: number,
+// ): Promise<void> {
+//   console.log(params.request.groupKeys, params.request.rowGroupCols)
+//   const groupedValues = params.request.groupKeys
+//   const groupFields = params.request.rowGroupCols.map((col) => col.id)
+//   if (groupFields.length === 0) {
+//     console.error("error when loading groups: no groups specified")
+//     params.fail()
+//     return
+//   }
+//   let groupField = groupFields[0]
+//   const previouslyGrouped = []
+//   for (let i = 0; i < groupedValues.length; i++) {
+//     groupField = groupFields[i + 1]
+//     previouslyGrouped.push(groupedValues[i])
+//   }
+//   const filters = previouslyGrouped.map((val, i) => {
+//     const filter: JobFilter = {
+//       field: groupFields[i],
+//       value: val,
+//       match: "exact",
+//     }
+//     return filter
+//   })
+//   try {
+//     const {groups, totalGroups} = await service.groupJobs(
+//       filters,
+//       { field: "count", direction: "DESC" },
+//       groupField,
+//       [],
+//       skip,
+//       take,
+//       undefined,
+//     )
+//     params.success({
+//       rowData: jobGroupsToRows(groups, groupField, groupFields, previouslyGrouped),
+//       rowCount: groups.length < take ? skip + groups.length : -1,
+//     })
+//   } catch (e) {
+//     console.error(e)
+//     params.fail()
+//   }
+// }
 
-function createDatasource(getJobsService: GetJobsService, groupJobsService: GroupJobsService): IServerSideDatasource {
-  return {
-    getRows: async (params) => {
-      const skip = params.request.startRow ?? 0
-      const take = (params.request.endRow ?? skip + 100) - skip
+// function createDatasource(getJobsService: GetJobsService, groupJobsService: GroupJobsService): IServerSideDatasource {
+//   return {
+//     getRows: async (params) => {
+//       const skip = params.request.startRow ?? 0
+//       const take = (params.request.endRow ?? skip + 100) - skip
 
-      if (shouldGroup(params.request)) {
-        await groupBy(groupJobsService, params, skip, take)
-        return
-      }
+//       if (shouldGroup(params.request)) {
+//         await groupBy(groupJobsService, params, skip, take)
+//         return
+//       }
 
-      try {
-        const filters: JobFilter[] = params.request.groupKeys.map((val, i) => {
-          return {
-            field: params.request.rowGroupCols[i].id,
-            value: val,
-            match: "exact",
-          }
-        })
-        const getJobsResponse = await getJobsService.getJobs(
-          filters,
-          { field: "jobId", direction: "ASC" },
-          skip,
-          take,
-          undefined,
-        )
-        const jobs = getJobsResponse.jobs
-        params.success({
-          rowData: jobsToRows(jobs),
-          rowCount: jobs.length < take ? skip + jobs.length : -1,
-        })
-      } catch (e) {
-        console.error(e)
-        params.fail()
-      }
-    },
-  }
-}
+//       try {
+//         const filters: JobFilter[] = params.request.groupKeys.map((val, i) => {
+//           return {
+//             field: params.request.rowGroupCols[i].id,
+//             value: val,
+//             match: "exact",
+//           }
+//         })
+//         const getJobsResponse = await getJobsService.getJobs(
+//           filters,
+//           { field: "jobId", direction: "ASC" },
+//           skip,
+//           take,
+//           undefined,
+//         )
+//         const jobs = getJobsResponse.jobs
+//         params.success({
+//           rowData: jobsToRows(jobs),
+//           rowCount: jobs.length < take ? skip + jobs.length : -1,
+//         })
+//       } catch (e) {
+//         console.error(e)
+//         params.fail()
+//       }
+//     },
+//   }
+// }
 
 export default function JobsPage(props: JobsPageProps) {
-  const gridStyle = useMemo(() => ({ height: "100%", width: "100%" }), [])
-
   const [columns, setColumns] = useState<ColumnSpec[]>(defaultColumns)
-  const [groups, setGroups] = useState<string[]>([])
-
-  const dataSource = useMemo(() => createDatasource(props.getJobsService, props.groupJobsService), [])
 
   function toggleColumn(key: string) {
     const newColumns = columns.map((col) => col)

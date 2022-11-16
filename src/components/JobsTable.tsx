@@ -1,8 +1,6 @@
 import { Typography, Divider, Button, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton } from "@mui/material"
 import { grey } from "@mui/material/colors"
-import { ColumnDef, flexRender, getCoreRowModel, getExpandedRowModel, getFilteredRowModel, getGroupedRowModel, getPaginationRowModel, GroupingState, PaginationState, useReactTable } from "@tanstack/react-table"
-import { ColDef } from "ag-grid-community"
-import { AgGridReact } from "ag-grid-react"
+import { ColumnDef, createColumnHelper, ExpandedState, flexRender, getCoreRowModel, getExpandedRowModel, getFilteredRowModel, getGroupedRowModel, getPaginationRowModel, GroupingState, PaginationState, RowSelection, useReactTable } from "@tanstack/react-table"
 import { Job, JobFilter, JobGroup, JobOrder } from "model"
 import React from "react"
 import { useMemo, useState, useCallback } from "react"
@@ -12,6 +10,8 @@ import GroupBySelect from "./GroupBySelect"
 import {GroupRemove, GroupAdd, GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight} from "@mui/icons-material";
 import GroupJobsService from "services/GroupJobsService"
 import { skipPartiallyEmittedExpressions } from "typescript"
+import { stringify } from "querystring"
+
 
 const defaultColumns: ColumnSpec[] = [
     { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
@@ -33,6 +33,8 @@ export type ColumnSpec = {
 
 type JobRow = {
     rowId: string
+
+    // Job details
     jobId?: string
     jobSet?: string
     queue?: string
@@ -40,13 +42,18 @@ type JobRow = {
     cpu?: number
     memory?: string
     ephemeralStorage?: string
+
+    // When grouped
     count?: number
+
+    // Special field for react-table
+    subRows?: JobRow[]
 }
 
 type RowKey = keyof JobRow
 function jobsToRows(jobs: Job[]): JobRow[] {
     return jobs.map((job) => ({
-      rowId: job.jobId,
+      rowId: "job:" + job.jobId,
       jobId: job.jobId,
       jobSet: job.jobSet,
       queue: job.queue,
@@ -67,18 +74,24 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
     const [data, setData] = React.useState<JobRow[]>([]);
 
     const columns = React.useMemo<ColumnDef<JobRow>[]>(
-        () => selectedColumns.map(c => (
+        () => {
+            const cols = selectedColumns.map((c): ColumnDef<JobRow> => (
             {
+                id: c.key,
                 accessorKey: c.key,
                 header: c.name,
-                aggregationFn: () => '-',
-                enableGrouping: c.groupable
-            }
-        )),
+                enableGrouping: c.groupable,
+                aggregationFn: () => '-'
+            }))
+            console.log({cols});
+            return cols;
+        },
         [selectedColumns]
     )
 
     const [grouping, setGrouping] = React.useState<GroupingState>([])
+    const [expanded, setExpanded] = React.useState<ExpandedState>({})
+
     const [{ pageIndex, pageSize }, setPagination] = React.useState<PaginationState>({
       pageIndex: 0,
       pageSize: 10,
@@ -93,7 +106,8 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
       )
 
     React.useEffect(() => {
-        async function fetchData() {
+        async function fetchTopLevelData() {
+            console.log("fetchTopLevelData")
             // TODO: Support filtering
             const filters: JobFilter[]  = [];
             
@@ -101,6 +115,14 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
             const take = pageSize;
 
             if (grouping?.length > 0) {
+                // const filters: JobFilter[] = params.request.groupKeys.map((val, i) => {
+                //     return {
+                //       field: params.request.rowGroupCols[i].id,
+                //       value: val,
+                //       match: "exact",
+                //     }
+                //   })
+
                 // TODO: Support multiple grouping
                 const order: JobOrder = { field: 'name', direction: 'ASC' };
                 const groupingField = grouping[0];
@@ -114,8 +136,12 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                     undefined
                 )
                 const rows: JobRow[] = groups.map(group => ({
-                    rowId: group.name,
-                    [groupingField]: group.name
+                    rowId: groupingField + ":" + group.name,
+                    [groupingField]: group.name,
+
+                    count: group.count,
+                    // groupingColumnId: groupingField,
+                    subRows: undefined // Will be set later if expanded
                 }));
                 setData(rows);
                 setPageCount(Math.ceil(totalGroups / pageSize));
@@ -128,31 +154,103 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                     take,
                     undefined
                 );
-                setData(jobsToRows(jobs));
+                const newData = jobsToRows(jobs);
+                console.log("Setting top level data:", {newData});
+                setData(newData);
                 setPageCount(Math.ceil(totalJobs / pageSize));
             }
         }
 
-        fetchData().catch(console.error);
+        fetchTopLevelData().catch(console.error);
     }, [pagination, grouping]);
+
+    React.useEffect(() => {
+        async function fetchExpandedData() {
+            const filters: JobFilter[] = typeof expanded === "object" ? 
+                Object.keys(expanded)
+                    .filter(e => expanded[e])
+                    .map(e => e.split(":"))
+                    .map(([field, value]) => ({
+                        field,
+                        value,
+                        match: "exact"
+                    }))
+                : [];
+
+            if (filters.length === 0) {
+                return;
+            }
+            
+            // TODO: How to handle pagination when expanding something with lots of rows?
+            const skip = 0;
+            const take = pageSize;
+
+            const order: JobOrder = { field: "jobId", direction: 'ASC' };
+            const { jobs, totalJobs } = await getJobsService.getJobs(
+                filters, 
+                order, 
+                skip, 
+                take,
+                undefined
+            );
+
+            const newJobRows = jobsToRows(jobs);
+
+            console.log("New subrows:", newJobRows);
+
+            const newData = data.map(d => ({
+                ...d,
+                subRows: filters.find(f => f.field + ":" + f.value === d.rowId) ? newJobRows : undefined
+            }));
+            
+            console.log("Setting expanded data:", newData);
+            setData(newData);
+        }
+
+        fetchExpandedData().catch(console.error);
+    }, [expanded])
+
+    console.log("Columns:", columns);
+    console.log("Data: ", data);
+    console.log("Grouping: ", grouping);
 
     const table = useReactTable({
         data,
-        pageCount: pageCount,
         columns,
         state: {
             grouping,
+            expanded,
             pagination,
         },
-        manualPagination: true,
-        onGroupingChange: setGrouping,
-        getExpandedRowModel: getExpandedRowModel(),
-        getGroupedRowModel: getGroupedRowModel(),
+        
         getCoreRowModel: getCoreRowModel(),
+        getRowId: row => row.rowId,
+        getSubRows: row => row.subRows,
+
+        manualGrouping: false,
+        onGroupingChange: setGrouping,
+        // getFilteredRowModel: getFilteredRowModel(),
+        // getGroupedRowModel: getGroupedRowModel(),
+        getGroupedRowModel: getGroupedRowModel(),
+
+        getExpandedRowModel: getExpandedRowModel(),
+        onExpandedChange: setExpanded,
+        autoResetExpanded: false,
+        manualExpanding: false,
+        paginateExpandedRows: true,
+        getRowCanExpand: row => row.subRows.length > 0,
+        getIsRowExpanded: row => typeof expanded == "object" && !!expanded[row.id],
+        
+        manualPagination: true,
+        pageCount: pageCount,
         onPaginationChange: setPagination,
+        getPaginationRowModel: getPaginationRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        debugTable: true,
     });
+
+    console.log("Table state:", table.getState());
+    console.log("Includes queue:", table.getState().grouping?.includes("queue"));
+    console.log("Table cols:", table.getAllColumns(), table.getAllColumns().map(c => ({...c, isGrouped: c.getIsGrouped()})))
     return (
         <TableContainer component={Paper} className="p-2">
             <div className="h-2" />
@@ -195,9 +293,11 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                 </TableHead>
                 <TableBody>
                     {table.getRowModel().rows.map(row => {
+                        console.log("Row", row, {isGrouped: row.getIsGrouped(), groupingColumnId: row.groupingColumnId, groupingValue: row.groupingValue});
                         return (
-                            <TableRow key={row.id}>
+                            <TableRow key={`${row.id}_d${row.depth}`}>
                                 {row.getVisibleCells().map(cell => {
+                                    // console.log("Cell", cell, {isGrouped: cell.getIsGrouped(), isAggregated: cell.getIsAggregated(), isPlaceholder: cell.getIsPlaceholder()})
                                     return (
                                         <TableCell key={cell.id}>
                                             {cell.getIsGrouped() ? (
@@ -218,7 +318,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                                                             cell.column.columnDef.cell,
                                                             cell.getContext()
                                                         )}{' '}
-                                                        ({row.subRows.length})
+                                                        ({row.original['count']})
                                                     </Button>
                                                 </>
                                             ) : cell.getIsAggregated() ? (
