@@ -11,6 +11,7 @@ import {GroupRemove, GroupAdd, GroupAddOutlined, GroupRemoveOutlined, ExpandMore
 import GroupJobsService from "services/GroupJobsService"
 import { skipPartiallyEmittedExpressions } from "typescript"
 import { stringify } from "querystring"
+import { usePrevious } from "hooks/usePrevious"
 
 
 const defaultColumns: ColumnSpec[] = [
@@ -64,6 +65,34 @@ function jobsToRows(jobs: Job[]): JobRow[] {
     }))
   }
 
+const getJobsForSubGroup = async (getJobsService: GetJobsService, fieldToValue: Record<string, string> ): Promise<JobRow[]> => {
+    const filters: JobFilter[] = Object.entries(fieldToValue)
+        .map(([field, value]) => ({
+            field,
+            value,
+            match: "exact"
+        }));
+
+    if (filters.length === 0) {
+        return [];
+    }
+    
+    // TODO: How to handle pagination when expanding something with lots of rows?
+    const skip = 0;
+    const take = Number.MAX_SAFE_INTEGER; // TODOs
+
+    const order: JobOrder = { field: "jobId", direction: 'ASC' };
+    const { jobs, totalJobs } = await getJobsService.getJobs(
+        filters, 
+        order, 
+        skip, 
+        take,
+        undefined
+    );
+
+    return jobsToRows(jobs);
+}
+
 type JobsPageProps = {
     getJobsService: GetJobsService
     groupJobsService: GroupJobsService
@@ -91,6 +120,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
     const [grouping, setGrouping] = React.useState<GroupingState>([])
     const [expanded, setExpanded] = React.useState<ExpandedState>({})
+    const prevExpanded = usePrevious(expanded);
 
     const [{ pageIndex, pageSize }, setPagination] = React.useState<PaginationState>({
       pageIndex: 0,
@@ -166,49 +196,51 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
     React.useEffect(() => {
         async function fetchExpandedData() {
-            const filters: JobFilter[] = typeof expanded === "object" ? 
-                Object.keys(expanded)
-                    .filter(e => expanded[e])
-                    .map(e => e.split(":"))
-                    .map(([field, value]) => ({
-                        field,
-                        value,
-                        match: "exact"
-                    }))
-                : [];
-
-            if (filters.length === 0) {
+            console.log("Expanded:", expanded);
+            if (expanded === true || !expanded || Object.keys(expanded).length === 0) {
+                console.warn("TODO expanded true");
                 return;
             }
-            
-            // TODO: How to handle pagination when expanding something with lots of rows?
-            const skip = 0;
-            const take = pageSize;
 
-            const order: JobOrder = { field: "jobId", direction: 'ASC' };
-            const { jobs, totalJobs } = await getJobsService.getJobs(
-                filters, 
-                order, 
-                skip, 
-                take,
-                undefined
-            );
+            const prevExpandedKeys = Object.keys(prevExpanded ?? {});
+            const newlyExpanded = Object.keys(expanded)
+                .filter(e => prevExpandedKeys.includes(e));
 
-            const newJobRows = jobsToRows(jobs);
+            const allNewData = await Promise.all(newlyExpanded.map(async (expandedKey) => {
+                const groupingLevel = grouping.length;
 
-            console.log("New subrows:", newJobRows);
+                const [field, value] = expandedKey.split(":");
+                const fieldsToValues = {
+                    [field]: value
+                };
 
-            const newData = data.map(d => ({
-                ...d,
-                subRows: filters.find(f => f.field + ":" + f.value === d.rowId) ? newJobRows : undefined
+                console.log(fieldsToValues);
+
+                const newJobRows = await getJobsForSubGroup(getJobsService, fieldsToValues);
+
+                console.log("New subrows:", newJobRows);
+                return {
+                    field,
+                    value,
+                    newJobRows
+                };
             }));
+
+            const newData = data.map(d => {
+                // Makes an assumption about depth
+                const newDataForRow = allNewData.find(f => f.field + ":" + f.value === d.rowId);
+                return {
+                    ...d,
+                    subRows: newDataForRow ? newDataForRow.newJobRows : d.subRows
+                };
+            });
             
             console.log("Setting expanded data:", newData);
             setData(newData);
         }
 
         fetchExpandedData().catch(console.error);
-    }, [expanded])
+    }, [expanded, prevExpanded])
 
     console.log("Columns:", columns);
     console.log("Data: ", data);
@@ -238,8 +270,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         autoResetExpanded: false,
         manualExpanding: false,
         paginateExpandedRows: true,
-        getRowCanExpand: row => row.subRows.length > 0,
-        getIsRowExpanded: row => typeof expanded == "object" && !!expanded[row.id],
         
         manualPagination: true,
         pageCount: pageCount,
@@ -293,7 +323,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                 </TableHead>
                 <TableBody>
                     {table.getRowModel().rows.map(row => {
-                        console.log("Row", row, {isGrouped: row.getIsGrouped(), groupingColumnId: row.groupingColumnId, groupingValue: row.groupingValue});
+                        // console.log("Row", row, {isGrouped: row.getIsGrouped(), groupingColumnId: row.groupingColumnId, groupingValue: row.groupingValue});
                         return (
                             <TableRow key={`${row.id}_d${row.depth}`}>
                                 {row.getVisibleCells().map(cell => {
@@ -329,12 +359,9 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                                                     cell.column.columnDef.cell,
                                                     cell.getContext()
                                                 )
-                                            ) : cell.getIsPlaceholder() ? null : ( // For cells with repeated values, render null
-                                                // Otherwise, just render the regular cell
-                                                flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )
+                                            ) : flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
                                             )}
                                         </TableCell>
                                     )
