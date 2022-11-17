@@ -143,10 +143,10 @@ export default function JobsPage(props: JobsPageProps) {
           </div>
         </div>
       </div>
-      <JobsTable 
-        getJobsService={props.getJobsService} 
-        groupJobsService={props.groupJobsService} 
-        selectedColumns={columns} 
+      <JobsTable
+        getJobsService={props.getJobsService}
+        groupJobsService={props.groupJobsService}
+        selectedColumns={columns}
       />
     </div>
   )

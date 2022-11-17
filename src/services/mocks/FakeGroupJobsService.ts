@@ -19,16 +19,16 @@ export default class FakeGroupJobsService implements GroupJobsService {
     take: number,
     signal: AbortSignal | undefined,
   ): Promise<GroupJobsResponse> {
-    console.log("GroupJobs called with params:", {filters, order, groupedField, aggregates, skip, take, signal});
+    console.log("GroupJobs called with params:", { filters, order, groupedField, aggregates, skip, take, signal })
     const filtered = this.jobs.filter(mergeFilters(filters))
     const groups = groupBy(filtered, groupedField)
     const sliced = groups.sort(comparator(order)).slice(skip, skip + take)
     const response = {
       groups: sliced,
-      totalGroups: groups.length
-    };
-    console.log("GroupJobs response", response);
-    return Promise.resolve(response);
+      totalGroups: groups.length,
+    }
+    console.log("GroupJobs response", response)
+    return Promise.resolve(response)
   }
 }
 

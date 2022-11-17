@@ -45,8 +45,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint './src/**/*.{js,ts,tsx}' --max-warnings 0",
-    "fmt": "eslint './src/**/*.{js,ts,tsx}' --max-warnings 0 --fix"
+    "lint": "eslint ./src/**/*.{js,ts,tsx} --max-warnings 0",
+    "fmt": "eslint ./src/**/*.{js,ts,tsx} --max-warnings 0 --fix"
   },
   "eslintConfig": {
     "extends": [

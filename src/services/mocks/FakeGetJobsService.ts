@@ -17,14 +17,14 @@ export default class FakeGetJobsService implements GetJobsService {
     take: number,
     signal: AbortSignal | undefined,
   ): Promise<GetJobsResponse> {
-    console.log("Making GetJobs call with params:", {filters, order, skip, take, signal});
+    console.log("Making GetJobs call with params:", { filters, order, skip, take, signal })
     const filtered = this.jobs.filter(mergeFilters(filters)).sort(comparator(order))
     const response = {
       totalJobs: filtered.length,
       jobs: filtered.slice(skip, skip + take),
-    };
-    console.log("GetJobs response", response);
-    return Promise.resolve(response);
+    }
+    console.log("GetJobs response", response)
+    return Promise.resolve(response)
   }
 }
 
