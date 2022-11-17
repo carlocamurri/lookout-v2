@@ -68,6 +68,9 @@ function jobsToRows(jobs: Job[]): JobRow[] {
     }))
   }
 
+type NestedSubRowMerge = {subRows: JobRow[]} | {[rowId: string]: NestedSubRowMerge};
+type SubRowMergeMap = Record<string, NestedSubRowMerge>;
+
 const getJobsForSubGroup = async (getJobsService: GetJobsService, fieldToValue: Record<string, string> ): Promise<JobRow[]> => {
     const filters: JobFilter[] = Object.entries(fieldToValue)
         .map(([field, value]) => ({
@@ -96,10 +99,6 @@ const getJobsForSubGroup = async (getJobsService: GetJobsService, fieldToValue: 
     return jobsToRows(jobs);
 }
 
-type SubRowMatchingPath = {
-    [pathElement: string]: SubRowMatchingPath
-} | JobRow[];
-
 type JobsPageProps = {
     getJobsService: GetJobsService
     groupJobsService: GroupJobsService
@@ -110,26 +109,20 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
     const [data, setData] = React.useState<JobRow[]>([]);
 
     const columns = React.useMemo<ColumnDef<JobRow>[]>(
-        () => {
-            const cols = selectedColumns.map((c): ColumnDef<JobRow> => (
+        () => selectedColumns.map((c): ColumnDef<JobRow> => (
             {
                 id: c.key,
                 accessorKey: c.key,
                 header: c.name,
                 enableGrouping: c.groupable,
                 aggregationFn: () => '-'
-            }))
-            console.log({cols});
-            return cols;
-        },
+            })),
         [selectedColumns]
     )
 
     const [grouping, setGrouping] = React.useState<GroupingState>([])
     const [expanded, setExpanded] = React.useState<ExpandedState>({})
     const prevExpanded = usePrevious(expanded);
-
-    console.warn({expanded, prevExpanded});
 
     const [{ pageIndex, pageSize }, setPagination] = React.useState<PaginationState>({
       pageIndex: 0,
@@ -154,14 +147,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
             const take = pageSize;
 
             if (grouping?.length > 0) {
-                // const filters: JobFilter[] = params.request.groupKeys.map((val, i) => {
-                //     return {
-                //       field: params.request.rowGroupCols[i].id,
-                //       value: val,
-                //       match: "exact",
-                //     }
-                //   })
-
                 // TODO: Support multiple grouping
                 const order: JobOrder = { field: 'name', direction: 'ASC' };
                 const groupingField = grouping[0];
@@ -222,10 +207,19 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
             }
             
 
-            const allNewData = await Promise.all(newlyExpanded.map(async (expandedKey) => {
+            const allNewData: NestedSubRowMerge[] = await Promise.all(newlyExpanded.map(async (expandedKey) => {
                 const groupingLevel = grouping.length;
 
                 const expandedLevel = expandedKey.split(">").length;
+
+                // For use with _.set + merge
+                const path = expandedKey.split(">").reduce<string[]>(
+                    (acc, newLevel) => {
+                        const prev = acc.length > 0 ? acc[acc.length - 1] : undefined;
+                        return acc.concat([(prev ? prev + ">" : "") + newLevel]);
+                    },
+                    []
+                ).join(".") + ".subRows";
 
                 if (groupingLevel === expandedLevel) {
                     // Time to request jobs
@@ -243,14 +237,11 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                         },
                         []
                     ).join(".") + ".subRows";
-                    // const path = expandedKey.replace(">", ".") + ".subRows";
-                    console.log({path});
 
                     return _.set({}, path, newJobRows);
                 } else {
                     // Need to request groups, filtered to current
                     const fields = expandedKey.split(">").map(s => s.split(":"));
-                    const [filterField, filterValue] = expandedKey.split(":");
 
                     const filters: JobFilter[] = fields.map(([filterField, filterValue]) => ({
                         field: filterField,
@@ -282,31 +273,16 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
                     // TODO: Fix this path for multi-level expand
                     console.log("Got subgroup rows:", newGroupRows)
-                    const path = expandedKey.split(">").reduce<string[]>(
-                        (acc, newLevel) => {
-                            const prev = acc.length > 0 ? acc[acc.length - 1] : undefined;
-                            return acc.concat([(prev ? prev + ">" : "") + newLevel]);
-                        },
-                        []
-                    ).join(".") + ".subRows";
-                    // const path = filterField + ":" + filterValue + ".subRows";
-                    console.log({path});
-
+                    
                     return _.set({}, path, newGroupRows);
                 }
             }));
 
-            const rowIdToNewSubRows = _.merge({}, ...allNewData);
+            const rowIdToNewSubRows: SubRowMergeMap = _.merge({}, ...allNewData);
             console.log({rowIdToNewSubRows});
 
             const newData = data.map(d => {
                 console.log("Row ID:", d.rowId, rowIdToNewSubRows[d.rowId]);
-                // return _.mergeWith({}, d, rowIdToNewSubRows[d.rowId], (objValue: unknown, srcValue: unknown, key, object, source, stack) => {
-                //     console.log()
-                //     if (_.isArray(objValue) && _.isPlainObject(srcValue)) {
-                //       return objValue.find();
-                //     }
-                //   });
                 const recursiveMerge = (currentRow: JobRow, currentNew: any | undefined) => {
                     if (currentNew === undefined) {
                         return currentRow;
@@ -338,10 +314,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         fetchExpandedData().catch(console.error);
     }, [expanded, prevExpanded])
 
-    // console.log("Columns:", columns);
     console.log("Data: ", data);
-    // console.log("Grouping: ", grouping);
-
     const table = useReactTable({
         data,
         columns,
@@ -357,12 +330,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
         manualGrouping: true,
         onGroupingChange: setGrouping,
-        // getFilteredRowModel: (table: ReactTable<JobRow>) => () => {
-        //     const result = getFilteredRowModel()(table as any)();
-        //     console.log("getFilteredRowModel", result);
-        //     return result;
-        // },
-        // getGroupedRowModel: getGroupedRowModel(),
         getGroupedRowModel: getGroupedRowModel(),
 
         getExpandedRowModel: getExpandedRowModel(),
@@ -370,7 +337,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         autoResetExpanded: false,
         manualExpanding: false,
         paginateExpandedRows: true,
-        // getRowCanExpand: row => row.original.isGroup,
         
         manualPagination: true,
         pageCount: pageCount,
@@ -378,10 +344,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         getPaginationRowModel: getPaginationRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
     });
-
-    // console.log("Table state:", table.getState());
-    // console.log("Includes queue:", table.getState().grouping?.includes("queue"));
-    // console.log("Table cols:", table.getAllColumns(), table.getAllColumns().map(c => ({...c, isGrouped: c.getIsGrouped()})))
     return (
         <TableContainer component={Paper} className="p-2">
             <div className="h-2" />
@@ -424,7 +386,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                 </TableHead>
                 <TableBody>
                     {table.getRowModel().rows.map(row => {
-                        console.log("Top level row:", row);
                         return <RenderRow  key={row.id} row={row} grouping={grouping}/>;
                     })}
                 </TableBody>
@@ -495,10 +456,6 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
             <div>
                 <button onClick={() => rerender()}>Force Rerender</button>
             </div>
-            <div>
-                {/* <button onClick={() => refreshData()}>Refresh Data</button> */}
-            </div>
-            <pre>{JSON.stringify(grouping, null, 2)}</pre>
         </TableContainer>
     );
 }
@@ -510,14 +467,9 @@ type RenderRowProps = {
 const RenderRow = ({row, grouping}: RenderRowProps) => {
     // console.log("Row", row, {isGroup: row.original.isGroup, isExpanded: row.getIsExpanded()});
     const rowIsGrouped = row.original.isGroup;
-    const lastGroupedCol = grouping[grouping.length - 1];
-
     return (
-        <>
         <TableRow key={`${row.id}_d${row.depth}`}>
             {row.getVisibleCells().map(cell => {
-                // console.log("Cell", cell, {isGrouped: cell.getIsGrouped(), isAggregated: cell.getIsAggregated(), isPlaceholder: cell.getIsPlaceholder()})
-                // console.log("Cell", cell, {isColGrouped: cell.column.getIsGrouped()})
                 const cellHasValue = cell.renderValue()
                 return (
                     <TableCell key={cell.id}>
@@ -558,9 +510,5 @@ const RenderRow = ({row, grouping}: RenderRowProps) => {
                 )
             })}
         </TableRow>
-        {/* {
-            rowIsGrouped && row.getIsExpanded() && row.subRows.map(subRow => <RenderRow key={subRow.id} row={subRow} grouping={grouping}/>)
-        } */}
-        </>
     );
 }
