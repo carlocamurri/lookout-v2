@@ -68,8 +68,8 @@ function jobsToRows(jobs: Job[]): JobRow[] {
     }))
   }
 
-type NestedSubRowMerge = {subRows: JobRow[]} | {[rowId: string]: NestedSubRowMerge};
-type SubRowMergeMap = Record<string, NestedSubRowMerge>;
+type NestedSubRowMergeNode = {subRows: JobRow[]} | {[rowId: string]: NestedSubRowMergeNode};
+type SubRowMergeMap = Record<string, NestedSubRowMergeNode>;
 
 const getJobsForSubGroup = async (getJobsService: GetJobsService, fieldToValue: Record<string, string> ): Promise<JobRow[]> => {
     const filters: JobFilter[] = Object.entries(fieldToValue)
@@ -97,6 +97,35 @@ const getJobsForSubGroup = async (getJobsService: GetJobsService, fieldToValue: 
     );
 
     return jobsToRows(jobs);
+}
+
+const mergeNewDataIntoExisting = (newData: NestedSubRowMergeNode[], existingData: JobRow[]): JobRow[] => {
+    const rowIdToNewSubRows: SubRowMergeMap = _.merge({}, ...newData);
+    
+    const recursiveMerge = (currentRow: JobRow, currentNew?: NestedSubRowMergeNode) => {
+        if (currentNew === undefined) {
+            return currentRow;
+        }
+        Object.keys(currentNew).forEach((key) => {
+            if (key === "subRows") {
+                currentRow.subRows = currentNew[key] as JobRow[];
+                // Potentially an order-of-operations issue with this?
+            } else {
+                const rowId = key;
+                const childNode = currentNew[rowId as keyof NestedSubRowMergeNode] as NestedSubRowMergeNode;
+                    const matchingSubRow = (currentRow.subRows ?? []).find((r: JobRow) => r.rowId == rowId);
+                    if (matchingSubRow) {
+                        recursiveMerge(matchingSubRow, childNode);
+                    }
+            }
+        })
+        console.log("Resulting", {currentRow});
+        return currentRow;
+    }
+
+    return existingData.map(d => {
+        return recursiveMerge({...d}, rowIdToNewSubRows[d.rowId]);
+    });
 }
 
 type JobsPageProps = {
@@ -207,7 +236,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
             }
             
 
-            const allNewData: NestedSubRowMerge[] = await Promise.all(newlyExpanded.map(async (expandedKey) => {
+            const allNewData: NestedSubRowMergeNode[] = await Promise.all(newlyExpanded.map(async (expandedKey) => {
                 const groupingLevel = grouping.length;
 
                 const expandedLevel = expandedKey.split(">").length;
@@ -278,34 +307,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                 }
             }));
 
-            const rowIdToNewSubRows: SubRowMergeMap = _.merge({}, ...allNewData);
-            console.log({rowIdToNewSubRows});
-
-            const newData = data.map(d => {
-                console.log("Row ID:", d.rowId, rowIdToNewSubRows[d.rowId]);
-                const recursiveMerge = (currentRow: JobRow, currentNew: any | undefined) => {
-                    if (currentNew === undefined) {
-                        return currentRow;
-                    }
-                    console.log({currentRow, currentNew});
-                    Object.keys(currentNew).forEach(key => {
-                        if (key === "subRows") {
-                            currentRow.subRows = currentNew[key];
-                            // Potentially an order-of-operations issue with this?
-                        } else {
-                            const rowId = key;
-                            const matchingSubRow = (currentRow.subRows ?? []).find((r: JobRow) => r.rowId == rowId);
-                            if (matchingSubRow) {
-                                recursiveMerge(matchingSubRow, currentNew[rowId]);
-                            }
-                        }
-                    })
-                    console.log("Resulting", {currentRow});
-                    return currentRow;
-                }
-
-                return recursiveMerge({...d}, rowIdToNewSubRows[d.rowId]);
-            });
+            const newData = mergeNewDataIntoExisting(allNewData, data);
             
             console.log("Setting expanded data:", newData);
             setData(newData);
@@ -491,7 +493,7 @@ const RenderRow = ({row, grouping}: RenderRowProps) => {
                                         cell.column.columnDef.cell,
                                         cell.getContext()
                                     )}{' '}
-                                    ({row.original.count})
+                                    (Jobs: {row.original.count})
                                 </Button>
                             </>
                         ) : cell.getIsAggregated() ? (
