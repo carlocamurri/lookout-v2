@@ -249,15 +249,14 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                     return _.set({}, path, newJobRows);
                 } else {
                     // Need to request groups, filtered to current
+                    const fields = expandedKey.split(">").map(s => s.split(":"));
                     const [filterField, filterValue] = expandedKey.split(":");
 
-                    const filters: JobFilter[]  = [
-                        {
-                            field: filterField,
-                            value: filterValue,
-                            match: "exact"
-                        }
-                    ];
+                    const filters: JobFilter[] = fields.map(([filterField, filterValue]) => ({
+                        field: filterField,
+                        value: filterValue,
+                        match: "exact"
+                    }));
             
                     const skip = 0;
                     const take = Number.MAX_SAFE_INTEGER;
@@ -273,7 +272,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                         undefined
                     )
                     const newGroupRows: JobRow[] = groups.map(group => ({
-                        rowId: filterField + ":" + filterValue + ">" + groupingField + ":" + group.name,
+                        rowId: expandedKey + ">" + groupingField + ":" + group.name,
                         [groupingField]: group.name,
 
                         isGroup: true,
@@ -283,7 +282,13 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
                     // TODO: Fix this path for multi-level expand
                     console.log("Got subgroup rows:", newGroupRows)
-                    const path = expandedKey.replace(">", ".") + ".subRows";
+                    const path = expandedKey.split(">").reduce<string[]>(
+                        (acc, newLevel) => {
+                            const prev = acc.length > 0 ? acc[acc.length - 1] : undefined;
+                            return acc.concat([(prev ? prev + ">" : "") + newLevel]);
+                        },
+                        []
+                    ).join(".") + ".subRows";
                     // const path = filterField + ":" + filterValue + ".subRows";
                     console.log({path});
 
