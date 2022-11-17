@@ -11,7 +11,7 @@ import { JobsTable } from "components/JobsTable"
 
 const HEADING_SECTION_HEIGHT = 48
 
-const defaultColumns: ColumnSpec[] = [
+export const DEFAULT_COLUMNS: ColumnSpec[] = [
   { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
   { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true },
   { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true },
@@ -37,7 +37,7 @@ type JobsPageProps = {
 }
 
 export default function JobsPage(props: JobsPageProps) {
-  const [columns, setColumns] = useState<ColumnSpec[]>(defaultColumns)
+  const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMNS)
 
   function toggleColumn(key: string) {
     const newColumns = columns.map((col) => col)

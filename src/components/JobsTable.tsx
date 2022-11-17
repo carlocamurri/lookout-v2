@@ -8,6 +8,7 @@ import {
   TableCell,
   TableBody,
   IconButton,
+  CircularProgress,
 } from "@mui/material"
 import {
   ColumnDef,
@@ -37,7 +38,7 @@ type JobsPageProps = {
   selectedColumns: ColumnSpec[]
 }
 export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }: JobsPageProps) => {
-  const rerender = React.useReducer(() => ({}), {})[1]
+  const [isLoading, setIsLoading] = React.useState(true);
   const [data, setData] = React.useState<JobTableRow[] | undefined>(undefined)
 
   const columns = React.useMemo<ColumnDef<JobRow>[]>(
@@ -113,6 +114,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
       )
 
       setData(rows)
+      setIsLoading(false)
       if (updatedRootCount) {
         setPageCount(Math.ceil(updatedRootCount / pageSize))
       }
@@ -151,6 +153,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   })
+
+  const rowsToRender = table.getRowModel().rows;
+  const canDisplay = !isLoading && rowsToRender.length > 0;
   return (
     <TableContainer component={Paper} className="p-2">
       <Table>
@@ -192,12 +197,56 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           ))}
         </TableHead>
         <TableBody>
-          {table.getRowModel().rows.map((row) => {
-            // console.log("Row", row);
-            return <RenderRow key={row.id} row={row} grouping={grouping} />
-          })}
+          {!canDisplay && <TableRow>
+            {isLoading && <TableCell colSpan={columns.length}><CircularProgress/></TableCell>}
+            {!isLoading && rowsToRender.length === 0 && <TableCell colSpan={columns.length}>There is no data to display</TableCell>}
+          </TableRow>
+          }
+          
+          {rowsToRender.map((row) => {
+            const original = row.original
+            const rowIsGrouped = isJobGroupRow(original)
+            return (
+              <TableRow key={`${row.id}_d${row.depth}`}>
+                {row.getVisibleCells().map((cell) => {
+                  const cellHasValue = cell.renderValue()
+                  return (
+                    <TableCell key={cell.id} size="small">
+                      {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? (
+                        // If it's a grouped cell, add an expander and row count
+                        <>
+                          <Button
+                            variant="text"
+                            size="small"
+                            {...{
+                              onClick: () => row.toggleExpanded(),
+                              style: {
+                                cursor: row.getCanExpand() ? "pointer" : "normal",
+                                textTransform: "initial",
+                                padding: "initial",
+                                color: "initial",
+                              },
+                            }}
+                          >
+                            {row.getIsExpanded() ? <ExpandMore fontSize="small" /> : <KeyboardArrowRight fontSize="small" />}{" "}
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())} (Jobs: {original.count})
+                          </Button>
+                        </>
+                      ) : cell.getIsAggregated() ? (
+                        // If the cell is aggregated, use the Aggregated
+                        // renderer for cell
+                        flexRender(cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell, cell.getContext())
+                      ) : (
+                        flexRender(cell.column.columnDef.cell, cell.getContext())
+                      )}
+                    </TableCell>
+                  )
+                })}
+              </TableRow>
+          )})}
         </TableBody>
       </Table>
+      
       <div className="h-2" />
       <div className="flex items-center gap-2">
         <button
@@ -255,58 +304,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           ))}
         </select>
       </div>
-      <div>{table.getRowModel().rows.length} Rows</div>
-      <div>
-        <button onClick={() => rerender()}>Force Rerender</button>
-      </div>
+      <div>{rowsToRender.length} Rows</div>
     </TableContainer>
-  )
-}
-
-type RenderRowProps = {
-  row: Row<JobTableRow>
-  grouping: string[]
-}
-const RenderRow = ({ row }: RenderRowProps) => {
-  // console.log("Row", row, {isGroup: row.original.isGroup, isExpanded: row.getIsExpanded()});
-  const original = row.original
-  const rowIsGrouped = isJobGroupRow(original)
-  return (
-    <TableRow key={`${row.id}_d${row.depth}`}>
-      {row.getVisibleCells().map((cell) => {
-        const cellHasValue = cell.renderValue()
-        return (
-          <TableCell key={cell.id} size="small">
-            {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? (
-              // If it's a grouped cell, add an expander and row count
-              <>
-                <Button
-                  variant="text"
-                  size="small"
-                  {...{
-                    onClick: () => row.toggleExpanded(),
-                    style: {
-                      cursor: row.getCanExpand() ? "pointer" : "normal",
-                      textTransform: "initial",
-                      padding: "initial",
-                      color: "initial",
-                    },
-                  }}
-                >
-                  {row.getIsExpanded() ? <ExpandMore fontSize="small" /> : <KeyboardArrowRight fontSize="small" />}{" "}
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())} (Jobs: {original.count})
-                </Button>
-              </>
-            ) : cell.getIsAggregated() ? (
-              // If the cell is aggregated, use the Aggregated
-              // renderer for cell
-              flexRender(cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell, cell.getContext())
-            ) : (
-              flexRender(cell.column.columnDef.cell, cell.getContext())
-            )}
-          </TableCell>
-        )
-      })}
-    </TableRow>
   )
 }
