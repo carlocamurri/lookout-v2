@@ -1,6 +1,6 @@
 import { Typography, Divider, Button, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton } from "@mui/material"
 import { grey } from "@mui/material/colors"
-import { ColumnDef, createColumnHelper, ExpandedState, flexRender, getCoreRowModel, getExpandedRowModel, getFilteredRowModel, getGroupedRowModel, getPaginationRowModel, GroupingState, PaginationState, RowSelection, useReactTable } from "@tanstack/react-table"
+import { ColumnDef, createColumnHelper, ExpandedState, flexRender, getCoreRowModel, getExpandedRowModel, getFilteredRowModel, getGroupedRowModel, getPaginationRowModel, GroupingState, PaginationState, RowSelection, useReactTable, Table as ReactTable, Row } from "@tanstack/react-table"
 import { Job, JobFilter, JobGroup, JobOrder } from "model"
 import React from "react"
 import { useMemo, useState, useCallback } from "react"
@@ -12,6 +12,7 @@ import GroupJobsService from "services/GroupJobsService"
 import { skipPartiallyEmittedExpressions } from "typescript"
 import { stringify } from "querystring"
 import { usePrevious } from "hooks/usePrevious"
+import _ from "lodash"
 
 
 const defaultColumns: ColumnSpec[] = [
@@ -45,6 +46,7 @@ type JobRow = {
     ephemeralStorage?: string
 
     // When grouped
+    isGroup: boolean // The ReactTable version of this doesn't seem to play nice with manual/serverside expanding
     count?: number
 
     // Special field for react-table
@@ -62,6 +64,7 @@ function jobsToRows(jobs: Job[]): JobRow[] {
       cpu: job.cpu,
       memory: job.memory,
       ephemeralStorage: job.ephemeralStorage,
+      isGroup: false
     }))
   }
 
@@ -93,6 +96,10 @@ const getJobsForSubGroup = async (getJobsService: GetJobsService, fieldToValue: 
     return jobsToRows(jobs);
 }
 
+type SubRowMatchingPath = {
+    [pathElement: string]: SubRowMatchingPath
+} | JobRow[];
+
 type JobsPageProps = {
     getJobsService: GetJobsService
     groupJobsService: GroupJobsService
@@ -121,6 +128,8 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
     const [grouping, setGrouping] = React.useState<GroupingState>([])
     const [expanded, setExpanded] = React.useState<ExpandedState>({})
     const prevExpanded = usePrevious(expanded);
+
+    console.warn({expanded, prevExpanded});
 
     const [{ pageIndex, pageSize }, setPagination] = React.useState<PaginationState>({
       pageIndex: 0,
@@ -169,8 +178,8 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                     rowId: groupingField + ":" + group.name,
                     [groupingField]: group.name,
 
+                    isGroup: true,
                     count: group.count,
-                    // groupingColumnId: groupingField,
                     subRows: undefined // Will be set later if expanded
                 }));
                 setData(rows);
@@ -196,7 +205,8 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
     React.useEffect(() => {
         async function fetchExpandedData() {
-            console.log("Expanded:", expanded);
+            console.log("Expanding:", {expanded, grouping});
+            
             if (expanded === true || !expanded || Object.keys(expanded).length === 0) {
                 console.warn("TODO expanded true");
                 return;
@@ -204,35 +214,116 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
 
             const prevExpandedKeys = Object.keys(prevExpanded ?? {});
             const newlyExpanded = Object.keys(expanded)
-                .filter(e => prevExpandedKeys.includes(e));
+                .filter(e => !prevExpandedKeys.includes(e));
+            console.log({newlyExpanded, prevExpanded});
+
+            if (newlyExpanded.length === 0) {
+                return;
+            }
+            
 
             const allNewData = await Promise.all(newlyExpanded.map(async (expandedKey) => {
                 const groupingLevel = grouping.length;
 
-                const [field, value] = expandedKey.split(":");
-                const fieldsToValues = {
-                    [field]: value
-                };
+                const expandedLevel = expandedKey.split(">").length;
 
-                console.log(fieldsToValues);
+                if (groupingLevel === expandedLevel) {
+                    // Time to request jobs
+                    const fieldsToValues = _.fromPairs(expandedKey.split(">").map(s => s.split(":")));
 
-                const newJobRows = await getJobsForSubGroup(getJobsService, fieldsToValues);
+                    console.log({fieldsToValues});
 
-                console.log("New subrows:", newJobRows);
-                return {
-                    field,
-                    value,
-                    newJobRows
-                };
+                    const newJobRows = await getJobsForSubGroup(getJobsService, fieldsToValues);
+
+                    console.log("New subrows:", newJobRows);
+                    const path = expandedKey.split(">").reduce<string[]>(
+                        (acc, newLevel) => {
+                            const prev = acc.length > 0 ? acc[acc.length - 1] : undefined;
+                            return acc.concat([(prev ? prev + ">" : "") + newLevel]);
+                        },
+                        []
+                    ).join(".") + ".subRows";
+                    // const path = expandedKey.replace(">", ".") + ".subRows";
+                    console.log({path});
+
+                    return _.set({}, path, newJobRows);
+                } else {
+                    // Need to request groups, filtered to current
+                    const [filterField, filterValue] = expandedKey.split(":");
+
+                    const filters: JobFilter[]  = [
+                        {
+                            field: filterField,
+                            value: filterValue,
+                            match: "exact"
+                        }
+                    ];
+            
+                    const skip = 0;
+                    const take = Number.MAX_SAFE_INTEGER;
+                    const order: JobOrder = { field: 'name', direction: 'ASC' };
+                    const groupingField = grouping[expandedLevel];
+                    const {groups, totalGroups} = await groupJobsService.groupJobs(
+                        filters,
+                        order,
+                        groupingField,
+                        selectedColumns.filter(c => c.groupable).map(c => c.key),
+                        skip,
+                        take,
+                        undefined
+                    )
+                    const newGroupRows: JobRow[] = groups.map(group => ({
+                        rowId: filterField + ":" + filterValue + ">" + groupingField + ":" + group.name,
+                        [groupingField]: group.name,
+
+                        isGroup: true,
+                        count: group.count,
+                        subRows: [] // Will be set later if expanded
+                    }));
+
+                    // TODO: Fix this path for multi-level expand
+                    console.log("Got subgroup rows:", newGroupRows)
+                    const path = expandedKey.replace(">", ".") + ".subRows";
+                    // const path = filterField + ":" + filterValue + ".subRows";
+                    console.log({path});
+
+                    return _.set({}, path, newGroupRows);
+                }
             }));
 
+            const rowIdToNewSubRows = _.merge({}, ...allNewData);
+            console.log({rowIdToNewSubRows});
+
             const newData = data.map(d => {
-                // Makes an assumption about depth
-                const newDataForRow = allNewData.find(f => f.field + ":" + f.value === d.rowId);
-                return {
-                    ...d,
-                    subRows: newDataForRow ? newDataForRow.newJobRows : d.subRows
-                };
+                console.log("Row ID:", d.rowId, rowIdToNewSubRows[d.rowId]);
+                // return _.mergeWith({}, d, rowIdToNewSubRows[d.rowId], (objValue: unknown, srcValue: unknown, key, object, source, stack) => {
+                //     console.log()
+                //     if (_.isArray(objValue) && _.isPlainObject(srcValue)) {
+                //       return objValue.find();
+                //     }
+                //   });
+                const recursiveMerge = (currentRow: JobRow, currentNew: any | undefined) => {
+                    if (currentNew === undefined) {
+                        return currentRow;
+                    }
+                    console.log({currentRow, currentNew});
+                    Object.keys(currentNew).forEach(key => {
+                        if (key === "subRows") {
+                            currentRow.subRows = currentNew[key];
+                            // Potentially an order-of-operations issue with this?
+                        } else {
+                            const rowId = key;
+                            const matchingSubRow = (currentRow.subRows ?? []).find((r: JobRow) => r.rowId == rowId);
+                            if (matchingSubRow) {
+                                recursiveMerge(matchingSubRow, currentNew[rowId]);
+                            }
+                        }
+                    })
+                    console.log("Resulting", {currentRow});
+                    return currentRow;
+                }
+
+                return recursiveMerge({...d}, rowIdToNewSubRows[d.rowId]);
             });
             
             console.log("Setting expanded data:", newData);
@@ -242,9 +333,9 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         fetchExpandedData().catch(console.error);
     }, [expanded, prevExpanded])
 
-    console.log("Columns:", columns);
+    // console.log("Columns:", columns);
     console.log("Data: ", data);
-    console.log("Grouping: ", grouping);
+    // console.log("Grouping: ", grouping);
 
     const table = useReactTable({
         data,
@@ -259,9 +350,13 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         getRowId: row => row.rowId,
         getSubRows: row => row.subRows,
 
-        manualGrouping: false,
+        manualGrouping: true,
         onGroupingChange: setGrouping,
-        // getFilteredRowModel: getFilteredRowModel(),
+        // getFilteredRowModel: (table: ReactTable<JobRow>) => () => {
+        //     const result = getFilteredRowModel()(table as any)();
+        //     console.log("getFilteredRowModel", result);
+        //     return result;
+        // },
         // getGroupedRowModel: getGroupedRowModel(),
         getGroupedRowModel: getGroupedRowModel(),
 
@@ -270,6 +365,7 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         autoResetExpanded: false,
         manualExpanding: false,
         paginateExpandedRows: true,
+        // getRowCanExpand: row => row.original.isGroup,
         
         manualPagination: true,
         pageCount: pageCount,
@@ -278,9 +374,9 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
         getFilteredRowModel: getFilteredRowModel(),
     });
 
-    console.log("Table state:", table.getState());
-    console.log("Includes queue:", table.getState().grouping?.includes("queue"));
-    console.log("Table cols:", table.getAllColumns(), table.getAllColumns().map(c => ({...c, isGrouped: c.getIsGrouped()})))
+    // console.log("Table state:", table.getState());
+    // console.log("Includes queue:", table.getState().grouping?.includes("queue"));
+    // console.log("Table cols:", table.getAllColumns(), table.getAllColumns().map(c => ({...c, isGrouped: c.getIsGrouped()})))
     return (
         <TableContainer component={Paper} className="p-2">
             <div className="h-2" />
@@ -323,51 +419,8 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
                 </TableHead>
                 <TableBody>
                     {table.getRowModel().rows.map(row => {
-                        // console.log("Row", row, {isGrouped: row.getIsGrouped(), groupingColumnId: row.groupingColumnId, groupingValue: row.groupingValue});
-                        return (
-                            <TableRow key={`${row.id}_d${row.depth}`}>
-                                {row.getVisibleCells().map(cell => {
-                                    // console.log("Cell", cell, {isGrouped: cell.getIsGrouped(), isAggregated: cell.getIsAggregated(), isPlaceholder: cell.getIsPlaceholder()})
-                                    return (
-                                        <TableCell key={cell.id}>
-                                            {cell.getIsGrouped() ? (
-                                                // If it's a grouped cell, add an expander and row count
-                                                <>
-                                                    <Button variant="text" size="small"
-                                                        {...{
-                                                            onClick: row.getToggleExpandedHandler(),
-                                                            style: {
-                                                                cursor: row.getCanExpand()
-                                                                    ? 'pointer'
-                                                                    : 'normal',
-                                                            },
-                                                        }}
-                                                    >
-                                                        {row.getIsExpanded() ? <ExpandMore fontSize="small"/> : <KeyboardArrowRight fontSize="small"/>}{' '}
-                                                        {flexRender(
-                                                            cell.column.columnDef.cell,
-                                                            cell.getContext()
-                                                        )}{' '}
-                                                        ({row.original['count']})
-                                                    </Button>
-                                                </>
-                                            ) : cell.getIsAggregated() ? (
-                                                // If the cell is aggregated, use the Aggregated
-                                                // renderer for cell
-                                                flexRender(
-                                                    cell.column.columnDef.aggregatedCell ??
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )
-                                            ) : flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    )
-                                })}
-                            </TableRow>
-                        )
+                        console.log("Top level row:", row);
+                        return <RenderRow  key={row.id} row={row} grouping={grouping}/>;
                     })}
                 </TableBody>
             </Table>
@@ -442,5 +495,67 @@ export const JobsTable = ({getJobsService, groupJobsService, selectedColumns}: J
             </div>
             <pre>{JSON.stringify(grouping, null, 2)}</pre>
         </TableContainer>
+    );
+}
+
+type RenderRowProps = {
+    row: Row<JobRow>
+    grouping: string[]
+}
+const RenderRow = ({row, grouping}: RenderRowProps) => {
+    // console.log("Row", row, {isGroup: row.original.isGroup, isExpanded: row.getIsExpanded()});
+    const rowIsGrouped = row.original.isGroup;
+    const lastGroupedCol = grouping[grouping.length - 1];
+
+    return (
+        <>
+        <TableRow key={`${row.id}_d${row.depth}`}>
+            {row.getVisibleCells().map(cell => {
+                // console.log("Cell", cell, {isGrouped: cell.getIsGrouped(), isAggregated: cell.getIsAggregated(), isPlaceholder: cell.getIsPlaceholder()})
+                // console.log("Cell", cell, {isColGrouped: cell.column.getIsGrouped()})
+                const cellHasValue = cell.renderValue()
+                return (
+                    <TableCell key={cell.id}>
+                        {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? (
+                            // If it's a grouped cell, add an expander and row count
+                            <>
+                                <Button variant="text" size="small"
+                                    {...{
+                                        onClick: () => row.toggleExpanded(),
+                                        style: {
+                                            cursor: row.getCanExpand()
+                                                ? 'pointer'
+                                                : 'normal',
+                                        },
+                                    }}
+                                >
+                                    {row.getIsExpanded() ? <ExpandMore fontSize="small"/> : <KeyboardArrowRight fontSize="small"/>}{' '}
+                                    {flexRender(
+                                        cell.column.columnDef.cell,
+                                        cell.getContext()
+                                    )}{' '}
+                                    ({row.original.count})
+                                </Button>
+                            </>
+                        ) : cell.getIsAggregated() ? (
+                            // If the cell is aggregated, use the Aggregated
+                            // renderer for cell
+                            flexRender(
+                                cell.column.columnDef.aggregatedCell ??
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                            )
+                        ) : flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                        )}
+                    </TableCell>
+                )
+            })}
+        </TableRow>
+        {/* {
+            rowIsGrouped && row.getIsExpanded() && row.subRows.map(subRow => <RenderRow key={subRow.id} row={subRow} grouping={grouping}/>)
+        } */}
+        </>
     );
 }

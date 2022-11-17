@@ -19,10 +19,12 @@ export default class FakeGetJobsService implements GetJobsService {
   ): Promise<GetJobsResponse> {
     console.log("Making GetJobs call with params:", {filters, order, skip, take, signal});
     const filtered = this.jobs.filter(mergeFilters(filters)).sort(comparator(order))
-    return Promise.resolve({
+    const response = {
       totalJobs: filtered.length,
       jobs: filtered.slice(skip, skip + take),
-    })
+    };
+    console.log("GetJobs response", response);
+    return Promise.resolve(response);
   }
 }
 
