@@ -22,7 +22,6 @@ import {
   GroupingState,
   PaginationState,
   useReactTable,
-  Row,
 } from "@tanstack/react-table"
 import React from "react"
 import GetJobsService from "services/GetJobsService"
@@ -38,7 +37,7 @@ type JobsPageProps = {
   selectedColumns: ColumnSpec[]
 }
 export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }: JobsPageProps) => {
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(true)
   const [data, setData] = React.useState<JobTableRow[] | undefined>(undefined)
 
   const columns = React.useMemo<ColumnDef<JobRow>[]>(
@@ -82,7 +81,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 
   React.useEffect(() => {
     async function fetchTopLevelData() {
-      console.log("fetchTopLevelData")
       // TODO: Support filtering
 
       if (newlyUnexpanded.length > 0) {
@@ -123,7 +121,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     fetchTopLevelData().catch(console.error)
   }, [pagination, grouping, expanded])
 
-  console.log("Data: ", data)
   const table = useReactTable({
     data: data ?? [],
     columns,
@@ -154,8 +151,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     getFilteredRowModel: getFilteredRowModel(),
   })
 
-  const rowsToRender = table.getRowModel().rows;
-  const canDisplay = !isLoading && rowsToRender.length > 0;
+  const rowsToRender = table.getRowModel().rows
+  const canDisplay = !isLoading && rowsToRender.length > 0
   return (
     <TableContainer component={Paper} className="p-2">
       <Table>
@@ -197,17 +194,24 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           ))}
         </TableHead>
         <TableBody>
-          {!canDisplay && <TableRow>
-            {isLoading && <TableCell colSpan={columns.length}><CircularProgress/></TableCell>}
-            {!isLoading && rowsToRender.length === 0 && <TableCell colSpan={columns.length}>There is no data to display</TableCell>}
-          </TableRow>
-          }
-          
+          {!canDisplay && (
+            <TableRow>
+              {isLoading && (
+                <TableCell colSpan={columns.length}>
+                  <CircularProgress />
+                </TableCell>
+              )}
+              {!isLoading && rowsToRender.length === 0 && (
+                <TableCell colSpan={columns.length}>There is no data to display</TableCell>
+              )}
+            </TableRow>
+          )}
+
           {rowsToRender.map((row) => {
             const original = row.original
             const rowIsGrouped = isJobGroupRow(original)
             return (
-              <TableRow key={`${row.id}_d${row.depth}`}>
+              <TableRow key={`${row.id}_d${row.depth}`} aria-label={row.id}>
                 {row.getVisibleCells().map((cell) => {
                   const cellHasValue = cell.renderValue()
                   return (
@@ -228,14 +232,21 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                               },
                             }}
                           >
-                            {row.getIsExpanded() ? <ExpandMore fontSize="small" /> : <KeyboardArrowRight fontSize="small" />}{" "}
+                            {row.getIsExpanded() ? (
+                              <ExpandMore fontSize="small" />
+                            ) : (
+                              <KeyboardArrowRight fontSize="small" />
+                            )}{" "}
                             {flexRender(cell.column.columnDef.cell, cell.getContext())} (Jobs: {original.count})
                           </Button>
                         </>
                       ) : cell.getIsAggregated() ? (
                         // If the cell is aggregated, use the Aggregated
                         // renderer for cell
-                        flexRender(cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell, cell.getContext())
+                        flexRender(
+                          cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )
                       ) : (
                         flexRender(cell.column.columnDef.cell, cell.getContext())
                       )}
@@ -243,10 +254,11 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                   )
                 })}
               </TableRow>
-          )})}
+            )
+          })}
         </TableBody>
       </Table>
-      
+
       <div className="h-2" />
       <div className="flex items-center gap-2">
         <button

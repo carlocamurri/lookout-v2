@@ -7,5 +7,5 @@ import App from "./App"
 test("renders jobs page", () => {
   render(<App />)
   const instances = screen.getAllByText(/jobs/i)
-  expect(instances.length).toBeGreaterThan(0);
+  expect(instances.length).toBeGreaterThan(0)
 })

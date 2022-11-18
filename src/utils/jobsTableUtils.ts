@@ -122,8 +122,6 @@ const fetchRows = async (
     )
 
     const newGroupRows = groupsToRows(groups, baseRowId, groupingField)
-    console.log("Got subgroup rows:", newGroupRows)
-
     return { rows: newGroupRows, totalCount: totalGroups }
   }
 }
@@ -182,7 +180,6 @@ export const fetchAllNeededRows = async (
 
       if (rowToModify) {
         rowToModify.subRows = response.fetchResponse.rows
-        console.log({ rowToModify })
       } else {
         console.warn("Could not find row to merge with path. This is a bug.", rowIdsPathForParent)
       }
