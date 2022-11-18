@@ -166,8 +166,6 @@ export const fetchAllNeededRows = async (
         return paths.concat([(prev ? prev + ">" : "") + newLevel])
       }, [])
 
-      console.log({ parentToFind, rowIdsPathForParent })
-
       const rowToModify: JobGroupRow | undefined = rowIdsPathForParent.reduce<JobGroupRow | undefined>(
         (row, rowIdToFind) => {
           const candidateRow = row?.subRows?.find((r) => r.rowId === rowIdToFind)
