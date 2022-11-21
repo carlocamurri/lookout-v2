@@ -4,8 +4,8 @@ import { render, screen } from "@testing-library/react"
 
 import App from "./App"
 
-test("renders learn react link", () => {
+test("renders jobs page", () => {
   render(<App />)
-  const linkElement = screen.getByText(/learn react/i)
-  expect(linkElement).toBeInTheDocument()
+  const instances = screen.getAllByText(/jobs/i)
+  expect(instances.length).toBeGreaterThan(0)
 })

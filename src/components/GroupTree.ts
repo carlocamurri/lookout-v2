@@ -105,7 +105,7 @@ export class GroupTree implements Tree {
     return it.children.map(nodeToJobGroup)
   }
 
-  getLeaves(groupValues: string[]): Job[] {
+  getLeaves(_groupValues: string[]): Job[] {
     throw new Error("Method not implemented.")
   }
 
@@ -211,7 +211,7 @@ export class GroupTree implements Tree {
   }
 
   private async fetchGroups(groupValues: string[], field: string, skip: number, take: number): Promise<JobGroup[]> {
-    const vals = await this.groupJobsService.groupJobs(
+    const { groups } = await this.groupJobsService.groupJobs(
       this.filtersForGroupValues(groupValues),
       DEFAULT_ORDER,
       field,
@@ -220,7 +220,7 @@ export class GroupTree implements Tree {
       take,
       undefined,
     )
-    return vals
+    return groups
   }
 
   private filtersForGroupValues(groupValues: string[]): JobFilter[] {

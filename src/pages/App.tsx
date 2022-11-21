@@ -3,9 +3,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { createTheme, ThemeProvider } from "@mui/material"
 import { grey, red } from "@mui/material/colors"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-import "ag-grid-enterprise"
-import "ag-grid-community/styles/ag-grid.css"
-import "ag-grid-community/styles/ag-theme-alpine.css"
 
 import { makeTestJobs } from "utils"
 

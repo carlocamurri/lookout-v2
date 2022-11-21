@@ -32,13 +32,13 @@ export function seededUuid(rand: () => number): () => string {
     })
 }
 
-export function makeTestJobs(nJobs: number, seed: number): Job[] {
+export function makeTestJobs(nJobs: number, seed: number, nQueues = 10, nJobSets = 100): Job[] {
   const rand = mulberry32(seed)
   const uuid = seededUuid(rand)
   const annotationKeys = ["hyperparameter", "some/very/long/annotation/key/name/with/forward/slashes", "region"]
 
-  const queues = Array.from(Array(10).keys()).map((i) => `queue-${i + 1}`)
-  const jobSets = Array.from(Array(100).keys()).map((i) => `job-set-${i + 1}`)
+  const queues = Array.from(Array(nQueues).keys()).map((i) => `queue-${i + 1}`)
+  const jobSets = Array.from(Array(nJobSets).keys()).map((i) => `job-set-${i + 1}`)
 
   const jobs: Job[] = []
   for (let i = 0; i < nJobs; i++) {
