@@ -25,7 +25,7 @@ import {
 } from "@tanstack/react-table"
 import React from "react"
 import GetJobsService from "services/GetJobsService"
-import { GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight } from "@mui/icons-material"
+import { GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
 import { JobTableRow, JobRow, fetchAllNeededRows, isJobGroupRow, FetchAllNeededRowsRequest } from "utils/jobsTableUtils"
@@ -135,13 +135,14 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     getSubRows: (row) => (isJobGroupRow(row) && row.subRows) || undefined,
 
     manualGrouping: true,
-    onGroupingChange: setGrouping,
+    onGroupingChange: newState => {
+      setExpanded({}); // Reset currently-expanded when grouping changes
+      setGrouping(newState);
+    },
     getGroupedRowModel: getGroupedRowModel(),
 
     getExpandedRowModel: getExpandedRowModel(),
     onExpandedChange: setExpanded,
-    autoResetExpanded: false,
-    manualExpanding: false,
     paginateExpandedRows: true,
 
     manualPagination: true,
@@ -150,6 +151,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   })
+
+  console.log(expanded);
 
   const rowsToRender = table.getRowModel().rows
   const canDisplay = !isLoading && rowsToRender.length > 0
@@ -177,10 +180,11 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                           >
                             {header.column.getIsGrouped() ? (
                               <>
-                                <GroupRemoveOutlined fontSize="small" /> ({header.column.getGroupedIndex()})
+                                <GroupRemoveOutlined fontSize="small" aria-hidden="false" aria-label="Group By"/> 
+                                ({header.column.getGroupedIndex()})
                               </>
                             ) : (
-                              <GroupAddOutlined fontSize="small" />
+                              <GroupAddOutlined fontSize="small" aria-hidden="false" aria-label="Ungroup By"/>
                             )}
                           </IconButton>
                         ) : null}{" "}
@@ -233,9 +237,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                             }}
                           >
                             {row.getIsExpanded() ? (
-                              <ExpandMore fontSize="small" />
+                              <KeyboardArrowDown fontSize="small" aria-label="Expanded" aria-hidden="false" />
                             ) : (
-                              <KeyboardArrowRight fontSize="small" />
+                              <KeyboardArrowRight fontSize="small" aria-label="Collapsed" aria-hidden="false" />
                             )}{" "}
                             {flexRender(cell.column.columnDef.cell, cell.getContext())} (Jobs: {original.count})
                           </Button>
