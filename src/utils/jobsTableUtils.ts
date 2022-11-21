@@ -31,6 +31,12 @@ export type JobTableRow = JobRow | JobGroupRow
 
 export const isJobGroupRow = (row: JobTableRow): row is JobGroupRow => "isGroup" in row
 
+export interface FetchRowRequest {
+  parentRowId: string | undefined // Undefined means root rows
+  skip: number
+  take: number
+}
+
 function jobsToRows(jobs: Job[]): JobRow[] {
   return jobs.map(
     (job): JobRow => ({
@@ -59,12 +65,7 @@ function groupsToRows(groups: JobGroup[], baseRowId: string, groupingField: stri
   )
 }
 
-interface FetchRowRequest {
-  parentRowId: string | undefined // Undefined means root rows
-  skip: number
-  take: number
-}
-interface FetchRowResult {
+interface FetchRowsResult {
   rows: JobRow[]
   totalCount: number
 }
@@ -74,7 +75,7 @@ const fetchRows = async (
   groupJobsService: GroupJobsService,
   selectedColumns: ColumnSpec[],
   currentGroupedColumns: string[],
-): Promise<FetchRowResult> => {
+): Promise<FetchRowsResult> => {
   const { parentRowId, skip, take } = rowRequest
 
   const groupingLevel = currentGroupedColumns.length
@@ -126,66 +127,54 @@ const fetchRows = async (
   }
 }
 
-export type FetchAllNeededRowsRequest = FetchRowRequest[]
-export type FetchAllNeededRowsResult = {
+export type FetchAndMergeNewRowsResult = {
   rows: JobTableRow[]
   updatedRootCount?: number
 }
-export const fetchAllNeededRows = async (
-  rowRequests: FetchAllNeededRowsRequest,
+export const fetchAndMergeNewRows = async (
+  rowRequest: FetchRowRequest,
   existingData: JobTableRow[],
   getJobsService: GetJobsService,
   groupJobsService: GroupJobsService,
   selectedColumns: ColumnSpec[],
   currentGroupedColumns: string[],
-): Promise<FetchAllNeededRowsResult> => {
-  const responses = await Promise.all(
-    rowRequests.map(async (rowRequest) => ({
-      rowRequest: rowRequest,
-      fetchResponse: await fetchRows(
-        rowRequest,
-        getJobsService,
-        groupJobsService,
-        selectedColumns,
-        currentGroupedColumns,
-      ),
-    })),
-  )
+): Promise<FetchAndMergeNewRowsResult> => {
+  const response = await fetchRows(
+    rowRequest,
+    getJobsService,
+    groupJobsService,
+    selectedColumns,
+    currentGroupedColumns,
+  );
 
-  let updatedRootCount = undefined
-  const mergedData: JobTableRow[] = responses.reduce<JobTableRow[]>(
-    (partiallyMergedData, response) => {
-      const parentToFind = response.rowRequest.parentRowId
-      if (!parentToFind) {
-        updatedRootCount = response.fetchResponse.totalCount
-        return response.fetchResponse.rows
+  // Just return if this is the top-level data
+  const parentToFind = rowRequest.parentRowId;
+  if (!parentToFind) {
+    return { rows: response.rows, updatedRootCount: response.totalCount };
+  }
+
+  // Otherwise merge it into existing data
+  const rowIdsPathForParent = parentToFind?.split(">").reduce<string[]>((paths, newLevel) => {
+    const prev = paths.length > 0 ? paths[paths.length - 1] : undefined
+    return paths.concat([(prev ? prev + ">" : "") + newLevel])
+  }, [])
+
+  const rowToModify: JobGroupRow | undefined = rowIdsPathForParent.reduce<JobGroupRow | undefined>(
+    (row, rowIdToFind) => {
+      const candidateRow = row?.subRows?.find((r) => r.rowId === rowIdToFind)
+      if (candidateRow && isJobGroupRow(candidateRow)) {
+        return candidateRow
       }
-
-      const rowIdsPathForParent = parentToFind?.split(">").reduce<string[]>((paths, newLevel) => {
-        const prev = paths.length > 0 ? paths[paths.length - 1] : undefined
-        return paths.concat([(prev ? prev + ">" : "") + newLevel])
-      }, [])
-
-      const rowToModify: JobGroupRow | undefined = rowIdsPathForParent.reduce<JobGroupRow | undefined>(
-        (row, rowIdToFind) => {
-          const candidateRow = row?.subRows?.find((r) => r.rowId === rowIdToFind)
-          if (candidateRow && isJobGroupRow(candidateRow)) {
-            return candidateRow
-          }
-        },
-        { subRows: partiallyMergedData } as JobGroupRow,
-      )
-
-      if (rowToModify) {
-        rowToModify.subRows = response.fetchResponse.rows
-      } else {
-        console.warn("Could not find row to merge with path. This is a bug.", rowIdsPathForParent)
-      }
-
-      return partiallyMergedData
     },
-    [...existingData],
+    { subRows: existingData } as JobGroupRow,
   )
 
-  return { rows: mergedData, updatedRootCount }
+  // Modifies in-place for now
+  if (rowToModify) {
+    rowToModify.subRows = response.rows
+  } else {
+    console.warn("Could not find row to merge with path. This is a bug.", rowIdsPathForParent)
+  }
+
+  return { rows: [...existingData], updatedRootCount: undefined }
 }

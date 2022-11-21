@@ -28,7 +28,7 @@ import GetJobsService from "services/GetJobsService"
 import { GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight } from "@mui/icons-material"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
-import { JobTableRow, JobRow, fetchAllNeededRows, isJobGroupRow, FetchAllNeededRowsRequest } from "utils/jobsTableUtils"
+import { JobTableRow, JobRow, fetchAndMergeNewRows, isJobGroupRow } from "utils/jobsTableUtils"
 import { ColumnSpec } from "pages/JobsPage"
 
 type JobsPageProps = {
@@ -94,16 +94,14 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 
       const parentRowId = newlyExpanded.length > 0 ? newlyExpanded[0] : undefined
 
-      const rowRequests: FetchAllNeededRowsRequest = [
-        {
-          parentRowId: parentRowId,
-          skip: parentRowId ? 0 : pageIndex * pageSize,
-          take: parentRowId ? Number.MAX_SAFE_INTEGER : pageSize,
-        },
-      ]
+      const rowRequest = {
+        parentRowId: parentRowId,
+        skip: parentRowId ? 0 : pageIndex * pageSize,
+        take: parentRowId ? Number.MAX_SAFE_INTEGER : pageSize,
+      };
 
-      const { rows, updatedRootCount } = await fetchAllNeededRows(
-        rowRequests,
+      const { rows, updatedRootCount } = await fetchAndMergeNewRows(
+        rowRequest,
         data ?? [],
         getJobsService,
         groupJobsService,
@@ -113,7 +111,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 
       setData(rows)
       setIsLoading(false)
-      if (updatedRootCount) {
+      if (updatedRootCount !== undefined) {
         setPageCount(Math.ceil(updatedRootCount / pageSize))
       }
     }
