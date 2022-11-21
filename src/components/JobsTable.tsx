@@ -28,9 +28,10 @@ import GetJobsService from "services/GetJobsService"
 import { GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight } from "@mui/icons-material"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
-import { JobTableRow, JobRow, fetchAndMergeNewRows, isJobGroupRow } from "utils/jobsTableUtils"
 import { ColumnSpec } from "pages/JobsPage"
-import { RowId } from "utils/reactTableUtils"
+import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
+import { JobTableRow, JobRow, isJobGroupRow } from "models/jobsTableModels"
+import { convertExpandedRowFieldsToFilters, fetchJobGroups, fetchJobs, groupsToRows, jobsToRows } from "utils/jobsTableUtils"
 
 type JobsPageProps = {
   getJobsService: GetJobsService
@@ -39,7 +40,7 @@ type JobsPageProps = {
 }
 export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }: JobsPageProps) => {
   const [isLoading, setIsLoading] = React.useState(true)
-  const [data, setData] = React.useState<JobTableRow[] | undefined>(undefined)
+  const [data, setData] = React.useState<JobTableRow[]>([])
 
   const columns = React.useMemo<ColumnDef<JobRow>[]>(
     () =>
@@ -81,7 +82,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
   )
 
   React.useEffect(() => {
-    async function fetchTopLevelData() {
+    async function fetchData() {
       // TODO: Support filtering
 
       if (newlyUnexpanded.length > 0) {
@@ -93,33 +94,40 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
         console.warn("More than one newly expanded!", { newlyExpanded })
       }
 
-      const parentRowId = newlyExpanded.length > 0 ? newlyExpanded[0] : undefined
+      const expandedRowInfo = newlyExpanded.length > 0 ? fromRowId(newlyExpanded[0]) : undefined;
+
+      const groupingLevel = grouping.length
+      const expandedLevel = expandedRowInfo ? expandedRowInfo.rowIdPathFromRoot.length : 0
 
       const rowRequest = {
-        parentRowId: parentRowId,
-        skip: parentRowId ? 0 : pageIndex * pageSize,
-        take: parentRowId ? Number.MAX_SAFE_INTEGER : pageSize,
+        filters: convertExpandedRowFieldsToFilters(expandedRowInfo?.rowIdPartsPath ?? []),
+        skip: expandedRowInfo ? 0 : pageIndex * pageSize,
+        take: expandedRowInfo ? Number.MAX_SAFE_INTEGER : pageSize,
       }
 
-      console.log({ parentRowId })
+      let newData, totalCount;
+      if (expandedLevel === groupingLevel) {
+        const {jobs, totalJobs} = await fetchJobs(rowRequest, getJobsService);
+        newData = jobsToRows(jobs);
+        totalCount = totalJobs;
+      } else {
+        const groupedCol = grouping[expandedLevel];
+        const colsToAggregate = selectedColumns.filter(c => c.groupable).map(c => c.key);
+        const {groups, totalGroups} = await fetchJobGroups(rowRequest, groupJobsService, groupedCol, colsToAggregate)
+        newData = groupsToRows(groups, expandedRowInfo?.rowId, groupedCol)
+        totalCount = totalGroups;
+      }
 
-      const { rows, updatedRootCount } = await fetchAndMergeNewRows(
-        rowRequest,
-        data ?? [],
-        getJobsService,
-        groupJobsService,
-        selectedColumns,
-        grouping,
-      )
+      const mergedData = mergeSubRows(data, newData, expandedRowInfo?.rowIdPathFromRoot ?? [])
 
-      setData(rows)
+      setData([...mergedData]) // ReactTable will only re-render if the array identity changes
       setIsLoading(false)
-      if (updatedRootCount !== undefined) {
-        setPageCount(Math.ceil(updatedRootCount / pageSize))
+      if (expandedRowInfo === undefined) {
+        setPageCount(Math.ceil(totalCount / pageSize))
       }
     }
 
-    fetchTopLevelData().catch(console.error)
+    fetchData().catch(console.error)
   }, [pagination, grouping, expanded])
 
   const table = useReactTable({

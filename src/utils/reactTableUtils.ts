@@ -18,6 +18,8 @@ export const toRowId = ({ type, value, parentRowId }: RowIdParts): RowId => {
 }
 
 export type RowIdInfo = {
+  rowId: RowId;
+
   // Provides key-value info on each part of this row's hierarchy position
   // E.g. [{type: "queue", value: "queue-2"}, {type: "jobSet", value: "job-set-2"}]
   rowIdPartsPath: RowIdParts[]
@@ -41,7 +43,44 @@ export const fromRowId = (rowId: RowId): RowIdInfo => {
   })
 
   return {
+    rowId: rowId,
     rowIdPartsPath,
     rowIdPathFromRoot,
   }
+}
+
+export interface RowWithOptionalSubRows {
+  rowId: RowId;
+  subRows?: RowWithOptionalSubRows[];
+}
+
+/**
+ * Merges new rows (which may or may not be subrows) with existing data.
+ */
+export const mergeSubRows = (existingData: RowWithOptionalSubRows[], newSubRows: RowWithOptionalSubRows[], locationForSubRows: RowId[]): RowWithOptionalSubRows[] => {
+  // Just return if this is the top-level data
+  if (locationForSubRows.length === 0) {
+      return newSubRows;
+  }
+
+  // Otherwise merge it into existing data
+  const rowToModify = locationForSubRows.reduce<RowWithOptionalSubRows | undefined>(
+      (row, rowIdToFind) => {
+          // TODO: Change subRows to a set to optimise this lookup
+          const candidateRow = row?.subRows?.find((r) => r.rowId === rowIdToFind)
+          if (candidateRow && candidateRow.subRows !== undefined) {
+              return candidateRow
+          }
+      },
+      { subRows: existingData } as RowWithOptionalSubRows,
+  )
+
+  // Modifies in-place for now
+  if (rowToModify) {
+      rowToModify.subRows = newSubRows
+  } else {
+      console.warn("Could not find row to merge with path. This is a bug.", locationForSubRows)
+  }
+
+  return existingData;
 }
