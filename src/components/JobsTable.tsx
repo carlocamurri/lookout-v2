@@ -152,8 +152,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     getFilteredRowModel: getFilteredRowModel(),
   })
 
-  console.log(expanded);
-
   const rowsToRender = table.getRowModel().rows
   const canDisplay = !isLoading && rowsToRender.length > 0
   return (
