@@ -5,7 +5,7 @@ import GroupJobsService from "services/GroupJobsService"
 import FakeGetJobsService from "services/mocks/FakeGetJobsService"
 import FakeGroupJobsService from "services/mocks/FakeGroupJobsService"
 import { makeTestJobs } from "utils"
-import { fetchAndMergeNewRows, JobTableRow } from "./jobsTableUtils"
+import { fetchAndMergeNewRows, FetchRowRequest, JobTableRow } from "./jobsTableUtils"
 
 describe("JobsTableUtils", () => {
   let jobs: Job[], getJobsService: GetJobsService, groupJobsService: GroupJobsService
@@ -65,7 +65,7 @@ describe("JobsTableUtils", () => {
     })
 
     it("retrieves groups", async () => {
-      const rowRequest = {
+      const rowRequest: FetchRowRequest = {
         parentRowId: undefined,
         skip: 0,
         take: 2,
@@ -94,13 +94,13 @@ describe("JobsTableUtils", () => {
     })
 
     it("retrieves and merges jobs for expanded groups", async () => {
-      const rowRequest = {
+      const rowRequest: FetchRowRequest = {
         parentRowId: "queue:queue-2",
         skip: 0,
         take: 2,
       }
 
-      const existingData = [
+      const existingData: JobTableRow[] = [
         { rowId: "queue:queue-1", queue: "queue-1", count: 1, isGroup: true, subRows: [] },
         { rowId: "queue:queue-2", queue: "queue-2", count: 1, isGroup: true, subRows: [] },
       ]
@@ -143,13 +143,13 @@ describe("JobsTableUtils", () => {
     })
 
     it("retrieves and merges groups for expanded multi-level groups", async () => {
-      const rowRequest = {
+      const rowRequest: FetchRowRequest = {
         parentRowId: "queue:queue-2",
         skip: 0,
         take: 2,
       }
 
-      const existingData = [
+      const existingData: JobTableRow[] = [
         { rowId: "queue:queue-1", queue: "queue-1", count: 1, isGroup: true, subRows: [] },
         { rowId: "queue:queue-2", queue: "queue-2", count: 1, isGroup: true, subRows: [] },
       ]

@@ -30,6 +30,7 @@ import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
 import { JobTableRow, JobRow, fetchAndMergeNewRows, isJobGroupRow } from "utils/jobsTableUtils"
 import { ColumnSpec } from "pages/JobsPage"
+import { RowId } from "utils/reactTableUtils"
 
 type JobsPageProps = {
   getJobsService: GetJobsService
@@ -58,11 +59,11 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
   const [expanded, setExpanded] = React.useState<ExpandedState>({})
   const prevExpanded = usePrevious(expanded)
   const { newlyExpanded, newlyUnexpanded } = React.useMemo(() => {
-    const prevExpandedKeys = Object.keys(prevExpanded ?? {})
-    const expandedKeys = Object.keys(expanded)
+    const prevExpandedKeys = Object.keys(prevExpanded ?? {}) as RowId[]
+    const expandedKeys = Object.keys(expanded) as RowId[]
 
-    const newlyExpanded = expandedKeys.filter((e) => !prevExpandedKeys.includes(e))
-    const newlyUnexpanded = prevExpandedKeys.filter((e) => !expandedKeys.includes(e))
+    const newlyExpanded: RowId[] = expandedKeys.filter((e) => !prevExpandedKeys.includes(e))
+    const newlyUnexpanded: RowId[] = prevExpandedKeys.filter((e) => !expandedKeys.includes(e))
     return { newlyExpanded, newlyUnexpanded }
   }, [expanded, prevExpanded])
 
@@ -99,6 +100,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
         skip: parentRowId ? 0 : pageIndex * pageSize,
         take: parentRowId ? Number.MAX_SAFE_INTEGER : pageSize,
       }
+
+      console.log({ parentRowId })
 
       const { rows, updatedRootCount } = await fetchAndMergeNewRows(
         rowRequest,
