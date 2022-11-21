@@ -139,18 +139,12 @@ export const fetchAndMergeNewRows = async (
   selectedColumns: ColumnSpec[],
   currentGroupedColumns: string[],
 ): Promise<FetchAndMergeNewRowsResult> => {
-  const response = await fetchRows(
-    rowRequest,
-    getJobsService,
-    groupJobsService,
-    selectedColumns,
-    currentGroupedColumns,
-  );
+  const response = await fetchRows(rowRequest, getJobsService, groupJobsService, selectedColumns, currentGroupedColumns)
 
   // Just return if this is the top-level data
-  const parentToFind = rowRequest.parentRowId;
+  const parentToFind = rowRequest.parentRowId
   if (!parentToFind) {
-    return { rows: response.rows, updatedRootCount: response.totalCount };
+    return { rows: response.rows, updatedRootCount: response.totalCount }
   }
 
   // Otherwise merge it into existing data

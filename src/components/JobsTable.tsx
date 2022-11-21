@@ -98,7 +98,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
         parentRowId: parentRowId,
         skip: parentRowId ? 0 : pageIndex * pageSize,
         take: parentRowId ? Number.MAX_SAFE_INTEGER : pageSize,
-      };
+      }
 
       const { rows, updatedRootCount } = await fetchAndMergeNewRows(
         rowRequest,
