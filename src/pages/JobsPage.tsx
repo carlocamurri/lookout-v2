@@ -6,7 +6,7 @@ import ColumnSelect from "components/ColumnSelect"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import styles from "./JobsPage.module.css"
-import { JobsTable } from "components/JobsTable"
+import { JobsTable } from "components/jobsTable/JobsTable"
 import { ColumnId, ColumnSpec, columnSpecFor, DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 const HEADING_SECTION_HEIGHT = 48
@@ -35,8 +35,8 @@ export default function JobsPage(props: JobsPageProps) {
     const newColumns = columns.map((col) => col)
     newColumns.push({
       ...columnSpecFor(name as ColumnId),
-      isAnnotation: true
-    });
+      isAnnotation: true,
+    })
     setColumns(newColumns)
   }
 
@@ -59,7 +59,7 @@ export default function JobsPage(props: JobsPageProps) {
     <div
       className={styles.container}
       style={{
-        width: "100%"
+        width: "100%",
       }}
     >
       <div

@@ -11,7 +11,7 @@ export const convertExpandedRowFieldsToFilters = (expandedRowIdParts: RowIdParts
     match: "exact",
   }))
 
-  return filters;
+  return filters
 }
 
 export interface FetchRowRequest {
@@ -30,19 +30,12 @@ export const fetchJobGroups = async (
   rowRequest: FetchRowRequest,
   groupJobsService: GroupJobsService,
   groupedColumn: string,
-  columnsToAggregate: string[]) => {
+  columnsToAggregate: string[],
+) => {
   const { filters, skip, take } = rowRequest
 
   const order: JobOrder = { field: "name", direction: "ASC" }
-  return await groupJobsService.groupJobs(
-    filters,
-    order,
-    groupedColumn,
-    columnsToAggregate,
-    skip,
-    take,
-    undefined,
-  )
+  return await groupJobsService.groupJobs(filters, order, groupedColumn, columnsToAggregate, skip, take, undefined)
 }
 
 export const jobsToRows = (jobs: Job[]): JobRow[] => {
@@ -60,7 +53,11 @@ export const jobsToRows = (jobs: Job[]): JobRow[] => {
   )
 }
 
-export const groupsToRows = (groups: JobGroup[], baseRowId: RowId | undefined, groupingField: string): JobGroupRow[] => {
+export const groupsToRows = (
+  groups: JobGroup[],
+  baseRowId: RowId | undefined,
+  groupingField: string,
+): JobGroupRow[] => {
   return groups.map(
     (group): JobGroupRow => ({
       rowId: toRowId({ type: groupingField, value: group.name, parentRowId: baseRowId }),
