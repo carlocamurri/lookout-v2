@@ -9,6 +9,7 @@ import {
   TableBody,
   IconButton,
   CircularProgress,
+  TablePagination,
 } from "@mui/material"
 import {
   ColumnDef,
@@ -41,6 +42,7 @@ type JobsPageProps = {
 export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }: JobsPageProps) => {
   const [isLoading, setIsLoading] = React.useState(true)
   const [data, setData] = React.useState<JobTableRow[]>([])
+  const [totalRowCount, setTotalRowCount] = React.useState(0);
 
   const columns = React.useMemo<ColumnDef<JobRow>[]>(
     () =>
@@ -51,6 +53,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           header: c.name,
           enableGrouping: c.groupable,
           aggregationFn: () => "-",
+          minSize: c.minSize
         }),
       ),
     [selectedColumns],
@@ -70,7 +73,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 
   const [{ pageIndex, pageSize }, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 30,
   })
   const [pageCount, setPageCount] = React.useState<number>(-1)
   const pagination = React.useMemo(
@@ -124,6 +127,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
       setIsLoading(false)
       if (expandedRowInfo === undefined) {
         setPageCount(Math.ceil(totalCount / pageSize))
+        setTotalRowCount(totalCount);
       }
     }
 
@@ -163,14 +167,18 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
   const rowsToRender = table.getRowModel().rows
   const canDisplay = !isLoading && rowsToRender.length > 0
   return (
-    <TableContainer component={Paper} className="p-2">
-      <Table>
+    <div>
+    <TableContainer component={Paper} sx={{margin: "0px"}}>
+      <Table sx={{marginBottom: "8px"}}>
         <TableHead>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id} hover>
               {headerGroup.headers.map((header) => {
+                console.log("Header", header, header.column.getSize());
                 return (
-                  <TableCell key={header.id}>
+                  <TableCell key={header.id}
+                             style={{minWidth: header.column.getSize()}}
+                  >
                     {header.isPlaceholder ? null : (
                       <div>
                         {header.column.getCanGroup() ? (
@@ -220,7 +228,10 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
             const original = row.original
             const rowIsGrouped = isJobGroupRow(original)
             return (
-              <TableRow key={`${row.id}_d${row.depth}`} aria-label={row.id}>
+              <TableRow key={`${row.id}_d${row.depth}`} 
+                        aria-label={row.id} 
+                        hover
+              >
                 {row.getVisibleCells().map((cell) => {
                   const cellHasValue = cell.renderValue()
                   return (
@@ -267,65 +278,17 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           })}
         </TableBody>
       </Table>
-
-      <div className="h-2" />
-      <div className="flex items-center gap-2">
-        <button
-          className="border rounded p-1"
-          onClick={() => table.setPageIndex(0)}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {"<<"}
-        </button>
-        <button
-          className="border rounded p-1"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {"<"}
-        </button>
-        <button className="border rounded p-1" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-          {">"}
-        </button>
-        <button
-          className="border rounded p-1"
-          onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-          disabled={!table.getCanNextPage()}
-        >
-          {">>"}
-        </button>
-        <span className="flex items-center gap-1">
-          <div>Page</div>
-          <strong>
-            {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </strong>
-        </span>
-        <span className="flex items-center gap-1">
-          | Go to page:
-          <input
-            type="number"
-            defaultValue={table.getState().pagination.pageIndex + 1}
-            onChange={(e) => {
-              const page = e.target.value ? Number(e.target.value) - 1 : 0
-              table.setPageIndex(page)
-            }}
-            className="border p-1 rounded w-16"
-          />
-        </span>
-        <select
-          value={table.getState().pagination.pageSize}
-          onChange={(e) => {
-            table.setPageSize(Number(e.target.value))
-          }}
-        >
-          {[10, 20, 30, 40, 50].map((pageSize) => (
-            <option key={pageSize} value={pageSize}>
-              Show {pageSize}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>{rowsToRender.length} Rows</div>
     </TableContainer>
+
+    <TablePagination
+          rowsPerPageOptions={[10, 20, 30, 40, 50]}
+          component="div"
+          count={totalRowCount}
+          rowsPerPage={pageSize}
+          page={pageIndex}
+          onPageChange={(_, page) => table.setPageIndex(page)}
+          onRowsPerPageChange={(e) => table.setPageSize(Number(e.target.value))}
+        />
+    </div>
   )
 }

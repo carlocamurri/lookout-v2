@@ -12,10 +12,10 @@ import { JobsTable } from "components/JobsTable"
 const HEADING_SECTION_HEIGHT = 48
 
 export const DEFAULT_COLUMNS: ColumnSpec[] = [
-  { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
-  { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true },
-  { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true },
-  { key: "state", name: "State", selected: true, isAnnotation: false, groupable: true },
+  { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false, minSize: 30 },
+  { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
+  { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
+  { key: "state", name: "State", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
   { key: "cpu", name: "CPU", selected: true, isAnnotation: false, groupable: false },
   { key: "memory", name: "Memory", selected: true, isAnnotation: false, groupable: false },
   { key: "ephemeralStorage", name: "Ephemeral Storage", selected: true, isAnnotation: false, groupable: false },
@@ -27,6 +27,7 @@ export type ColumnSpec = {
   selected: boolean
   isAnnotation: boolean
   groupable: boolean
+  minSize?: number;
 }
 
 type JobsPageProps = {
@@ -80,14 +81,13 @@ export default function JobsPage(props: JobsPageProps) {
     <div
       className={styles.container}
       style={{
-        width: props.width,
-        height: props.height,
+        width: "100%"
       }}
     >
       <div
         className={styles.header}
         style={{
-          width: props.width,
+          width: "100%",
           height: HEADING_SECTION_HEIGHT,
         }}
       >
