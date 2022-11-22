@@ -54,7 +54,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           enableGrouping: c.groupable,
           aggregationFn: () => "-",
           minSize: c.minSize,
-          size: c.minSize
+          size: c.minSize,
+          ...(c.formatter ? {cell: info => c.formatter?.(info.getValue())} : {})
         }),
       ),
     [selectedColumns],

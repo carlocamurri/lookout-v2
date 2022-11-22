@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 
 import { Button, Divider, Typography } from "@mui/material"
-import { v4 as uuidv4 } from "uuid"
 
 import ColumnSelect from "components/ColumnSelect"
 import GetJobsService from "services/GetJobsService"
