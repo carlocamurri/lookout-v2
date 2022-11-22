@@ -86,6 +86,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     [pageIndex, pageSize],
   )
 
+  const [hoveredHeaderColumn, setHoveredHeaderColumn] = React.useState<ColumnId | undefined>(undefined);
+
   React.useEffect(() => {
     async function fetchData() {
       // TODO: Support filtering
@@ -174,20 +176,33 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
       <Table>
         <TableHead>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} hover>
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                const colSpec = columnSpecFor(header.id as ColumnId)
+                const id = header.id as ColumnId;
+                const colSpec = columnSpecFor(id)
+                const isHovered = id === hoveredHeaderColumn;
+                const isRightAligned = colSpec.isNumeric;
                 return (
                   <TableCell key={header.id}
-                             align={colSpec.isNumeric ? 'right' : 'left'}
-                             style={{
+                             align={isRightAligned ? 'right' : 'left'}
+                             size="small"
+                             sx={{
                               minWidth: header.column.getSize(),
-                              padding: "0.5em"
-                            }}
+                              lineHeight: "2.5em", // Provides enough height for icon buttons
+                              paddingLeft: "0.5em",
+                              paddingRight: "0.5em",
+                              '&:hover': {
+                                opacity: 0.85
+                              }
+                             }}
+                             onMouseEnter={() => setHoveredHeaderColumn(id)}
+                             onMouseLeave={() => setHoveredHeaderColumn(undefined)}
                   >
                     {header.isPlaceholder ? null : (
-                      <div>
-                        {header.column.getCanGroup() ? (
+                      <>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getIsGrouped() && <> (# Jobs)</>}
+                        {header.column.getCanGroup() && isHovered ? (
                           // If the header can be grouped, let's add a toggle
                           <IconButton
                             size="small"
@@ -199,17 +214,13 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                             }}
                           >
                             {header.column.getIsGrouped() ? (
-                              <>
-                                <GroupRemoveOutlined fontSize="small" /> ({header.column.getGroupedIndex()})
-                              </>
+                              <GroupRemoveOutlined fontSize="small" />
                             ) : (
                               <GroupAddOutlined fontSize="small" />
                             )}
                           </IconButton>
                         ) : null}{" "}
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsGrouped() && <> (# Jobs)</>}
-                      </div>
+                      </>
                     )}
                   </TableCell>
                 )
