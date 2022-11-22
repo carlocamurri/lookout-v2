@@ -32,7 +32,7 @@ import { usePrevious } from "hooks/usePrevious"
 import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
 import { JobTableRow, JobRow, isJobGroupRow } from "models/jobsTableModels"
 import { convertExpandedRowFieldsToFilters, fetchJobGroups, fetchJobs, groupsToRows, jobsToRows } from "utils/jobsTableUtils"
-import { ColumnSpec } from "utils/jobsTableColumns"
+import { ColumnId, ColumnSpec, columnSpecFor } from "utils/jobsTableColumns"
 
 type JobsPageProps = {
   getJobsService: GetJobsService
@@ -176,8 +176,10 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} hover>
               {headerGroup.headers.map((header) => {
+                const colSpec = columnSpecFor(header.id as ColumnId)
                 return (
                   <TableCell key={header.id}
+                             align={colSpec.isNumeric ? 'right' : 'left'}
                              style={{
                               minWidth: header.column.getSize(),
                               padding: "0.5em"
@@ -238,9 +240,10 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                         hover
               >
                 {row.getVisibleCells().map((cell) => {
+                  const colSpec = columnSpecFor(cell.column.id as ColumnId)
                   const cellHasValue = cell.renderValue()
                   return (
-                    <TableCell key={cell.id} size="small">
+                    <TableCell key={cell.id} align={colSpec.isNumeric ? 'right' : 'left'} style={{padding: "0.5em"}}>
                       {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? (
                         // If it's a grouped cell, add an expander and row count
                         <>

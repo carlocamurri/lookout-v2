@@ -8,7 +8,8 @@ export type ColumnSpec = {
     selected: boolean
     isAnnotation: boolean
     groupable: boolean
-    minSize?: number;
+    minSize: number;
+    isNumeric?: boolean;
     formatter?: (value: unknown) => string;
 }
 
@@ -28,7 +29,7 @@ const COLUMN_SPECS: ColumnSpec[] = [
     { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true, minSize: 100 },
     { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true, minSize: 95 },
     { key: "state", name: "State", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
-    { key: "cpu", name: "CPU", selected: true, isAnnotation: false, groupable: false, minSize: 60, formatter: cpu => cpu ? numFormatter.format(Number(cpu)) : '' },
+    { key: "cpu", name: "CPU", selected: true, isAnnotation: false, groupable: false, minSize: 60, isNumeric: true, formatter: cpu => cpu ? numFormatter.format(Number(cpu)) : '' },
     { key: "memory", name: "Memory", selected: true, isAnnotation: false, groupable: false, minSize: 70 },
     { key: "ephemeralStorage", name: "Eph. Storage", selected: true, isAnnotation: false, groupable: false, minSize: 95 },
   ]
