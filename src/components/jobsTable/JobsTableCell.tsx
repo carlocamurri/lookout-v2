@@ -3,7 +3,16 @@ import { GroupRemoveOutlined, GroupAddOutlined, KeyboardArrowRight, KeyboardArro
 import { TableCell, IconButton } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"
 import { JobRow } from "models/jobsTableModels"
-import { ColumnId, columnSpecFor } from "utils/jobsTableColumns"
+import { ColumnId, ColumnSpec, columnSpecFor } from "utils/jobsTableColumns"
+
+const sharedCellStyle = {
+  padding: "0.5em",
+  "&:hover": {
+    opacity: 0.85,
+  },
+}
+
+const shouldRightAlign = (colSpec: ColumnSpec): boolean => Boolean(colSpec.isNumeric)
 
 export interface HeaderCellProps {
   header: Header<JobRow, unknown>
@@ -14,7 +23,7 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
   const id = header.id as ColumnId
   const colSpec = columnSpecFor(id)
   const isHovered = id === hoveredColumn
-  const isRightAligned = colSpec.isNumeric
+  const isRightAligned = shouldRightAlign(colSpec)
   return (
     <TableCell
       key={id}
@@ -23,11 +32,7 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
       sx={{
         minWidth: header.column.getSize(),
         lineHeight: "2.5em", // Provides enough height for icon buttons
-        paddingLeft: "0.5em",
-        paddingRight: "0.5em",
-        "&:hover": {
-          opacity: 0.85,
-        },
+        ...sharedCellStyle,
       }}
       onMouseEnter={() => onHoverChange(id)}
       onMouseLeave={() => onHoverChange(undefined)}
@@ -63,15 +68,13 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
   const colId = cell.column.id as ColumnId
   const colSpec = columnSpecFor(colId)
   const cellHasValue = cell.renderValue()
+  const isRightAligned = shouldRightAlign(colSpec)
   return (
     <TableCell
       key={cell.id}
-      align={colSpec.isNumeric ? "right" : "left"}
+      align={isRightAligned ? "right" : "left"}
       sx={{
-        padding: "0.5em",
-        "&:hover": {
-          opacity: 0.85,
-        },
+        ...sharedCellStyle,
       }}
     >
       {/* {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? ( */}

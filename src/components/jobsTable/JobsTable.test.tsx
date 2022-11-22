@@ -58,7 +58,7 @@ describe("JobsTable", () => {
     const matchingRow = await findByRole("row", { name: "job:" + jobToSearchFor.jobId })
     DEFAULT_COLUMN_SPECS.forEach((col) => {
       const cellValue = jobToSearchFor[col.key as keyof Job]
-      const expectedText = col.formatter?.(cellValue) ?? cellValue;
+      const expectedText = col.formatter?.(cellValue) ?? cellValue
       within(matchingRow).getByText(expectedText!.toString()) // eslint-disable-line @typescript-eslint/no-non-null-assertion
     })
 
@@ -166,7 +166,7 @@ describe("JobsTable", () => {
     getJobsService = new FakeGetJobsService(jobs)
     groupJobsService = new FakeGroupJobsService(jobs)
 
-    const { findByText, findAllByRole, getByRole, queryByRole, queryAllByRole } = renderComponent()
+    const { findByText, findAllByRole, getByRole, queryAllByRole } = renderComponent()
     await waitForElementToBeRemoved(() => getByRole("progressbar"))
 
     await groupByHeader("Queue", findByText)
@@ -200,8 +200,8 @@ describe("JobsTable", () => {
   }
 
   async function groupByHeader(header: string, findByText: any) {
-    const headerElement = await findByText(header);
-    userEvent.hover(headerElement);
+    const headerElement = await findByText(header)
+    userEvent.hover(headerElement)
 
     const groupButton = await within(await findByText(header)).findByRole("button")
     userEvent.click(groupButton)
@@ -210,8 +210,8 @@ describe("JobsTable", () => {
   async function expandRow(buttonText: string, getByRole: any) {
     const rowToExpand = getByRole("row", {
       name: new RegExp(buttonText),
-    });
-    const expandButton = within(rowToExpand).getByRole("button", {name: "Expand row"});
+    })
+    const expandButton = within(rowToExpand).getByRole("button", { name: "Expand row" })
     userEvent.click(expandButton)
   }
 })
