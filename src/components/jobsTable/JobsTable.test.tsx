@@ -158,6 +158,39 @@ describe("JobsTable", () => {
     await assertNumDataRowsShown(numStates + numJobSets + numQueues + numJobsExpectedToShow, findAllByRole)
   })
 
+  it('should reset currently-expanded if grouping changes', async () => {
+    const numQueues = 2
+    const numJobSets = 3
+    jobs = makeTestJobs(5, 1, numQueues, numJobSets)
+    getJobsService = new FakeGetJobsService(jobs)
+    groupJobsService = new FakeGroupJobsService(jobs)
+
+    const { findByText, findAllByRole, getByRole, queryByRole } = renderComponent()
+    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+
+    await groupByHeader("Queue", findByText)
+
+    // Check we're only showing one row for each queue
+    await assertNumDataRowsShown(numQueues, findAllByRole)
+
+    // Expand a row
+    const job = jobs[0]
+    await expandRow(job.queue, getByRole)
+
+    // Check the row right number of rows is being shown
+    const numShownJobs = jobs.filter((j) => j.queue === job.queue).length
+    await assertNumDataRowsShown(numQueues + numShownJobs, findAllByRole)
+
+    // Assert arrow down icon is shown
+    getByRole("button", {name: /Expanded/i, exact: false})
+
+    // Group by another header
+    await groupByHeader("Job Set", findByText)
+
+    // Verify all rows are now collapsed
+    expect(queryByRole("button", {name: /Expanded/i, exact: false})).toBeNull();
+  });
+
   async function assertNumDataRowsShown(nDataRows: number, findAllByRole: any) {
     await waitFor(async () => {
       const rows = await findAllByRole("row")

@@ -156,7 +156,10 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 
     // Grouping
     manualGrouping: true,
-    onGroupingChange: setGrouping,
+    onGroupingChange: newState => {
+      setExpanded({}); // Reset currently-expanded when grouping changes
+      setGrouping(newState);
+    },
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     onExpandedChange: setExpanded,

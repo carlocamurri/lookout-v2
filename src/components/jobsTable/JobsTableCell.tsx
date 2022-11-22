@@ -1,5 +1,5 @@
 import React from "react"
-import { GroupRemoveOutlined, GroupAddOutlined, ExpandMore, KeyboardArrowRight } from "@mui/icons-material"
+import { GroupRemoveOutlined, GroupAddOutlined, KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
 import { TableCell, IconButton } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"
 import { JobRow } from "models/jobsTableModels"
@@ -40,9 +40,9 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
             // If the header can be grouped, let's add a toggle
             <IconButton size="small" onClick={header.column.getToggleGroupingHandler()}>
               {header.column.getIsGrouped() ? (
-                <GroupRemoveOutlined fontSize="small" />
+                <GroupRemoveOutlined fontSize="small" aria-hidden="false" aria-label="Group By" />
               ) : (
-                <GroupAddOutlined fontSize="small" />
+                <GroupAddOutlined fontSize="small" aria-hidden="false" aria-label="Ungroup By" />
               )}
             </IconButton>
           ) : null}{" "}
@@ -79,7 +79,10 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
         // If it's a grouped cell, add an expander and row count
         <>
           <IconButton size="small" edge="start" onClick={() => onExpandedChange()}>
-            {rowIsExpanded ? <ExpandMore fontSize="small" /> : <KeyboardArrowRight fontSize="small" />}
+            {rowIsExpanded ? 
+                <KeyboardArrowDown fontSize="small" aria-label="Expanded" aria-hidden="false" /> : 
+                <KeyboardArrowRight fontSize="small" aria-label="Collapsed" aria-hidden="false" />
+            }
           </IconButton>
           {flexRender(cell.column.columnDef.cell, cell.getContext())} ({subCount})
         </>
