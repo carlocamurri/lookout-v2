@@ -80,9 +80,9 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
         <>
           <IconButton size="small" edge="start" onClick={() => onExpandedChange()}>
             {rowIsExpanded ? (
-              <KeyboardArrowDown fontSize="small" aria-label="Expanded" aria-hidden="false" />
+              <KeyboardArrowDown fontSize="small" aria-label="Collapse row" aria-hidden="false" />
             ) : (
-              <KeyboardArrowRight fontSize="small" aria-label="Collapsed" aria-hidden="false" />
+              <KeyboardArrowRight fontSize="small" aria-label="Expand row" aria-hidden="false" />
             )}
           </IconButton>
           {flexRender(cell.column.columnDef.cell, cell.getContext())} ({subCount})
