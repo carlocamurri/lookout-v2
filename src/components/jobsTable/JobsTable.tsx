@@ -19,6 +19,7 @@ import {
   getPaginationRowModel,
   GroupingState,
   PaginationState,
+  Row,
   useReactTable,
 } from "@tanstack/react-table"
 import React from "react"
@@ -172,7 +173,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
   })
 
   const rowsToRender = table.getRowModel().rows
-  const canDisplay = !isLoading && rowsToRender.length > 0
   return (
     <>
       <TableContainer component={Paper}>
@@ -191,39 +191,12 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
               </TableRow>
             ))}
           </TableHead>
-          <TableBody>
-            {!canDisplay && (
-              <TableRow>
-                {isLoading && (
-                  <TableCell colSpan={columns.length}>
-                    <CircularProgress />
-                  </TableCell>
-                )}
-                {!isLoading && rowsToRender.length === 0 && (
-                  <TableCell colSpan={columns.length}>There is no data to display</TableCell>
-                )}
-              </TableRow>
-            )}
 
-            {rowsToRender.map((row) => {
-              const original = row.original
-              const rowIsGroup = isJobGroupRow(original)
-              return (
-                <TableRow key={`${row.id}_d${row.depth}`} aria-label={row.id} hover>
-                  {row.getVisibleCells().map((cell) => (
-                    <BodyCell
-                      cell={cell}
-                      rowIsGroup={rowIsGroup}
-                      rowIsExpanded={row.getIsExpanded()}
-                      onExpandedChange={row.toggleExpanded}
-                      subCount={rowIsGroup ? original.count : undefined}
-                      key={cell.id}
-                    />
-                  ))}
-                </TableRow>
-              )
-            })}
-          </TableBody>
+          <JobsTableBody
+            dataIsLoading={isLoading}
+            columns={columns}
+            rowsToRender={rowsToRender}
+          />
         </Table>
       </TableContainer>
 
@@ -239,3 +212,48 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     </>
   )
 }
+
+interface JobsTableBodyProps {
+  dataIsLoading: boolean;
+  columns: ColumnDef<JobRow>[]
+  rowsToRender: Row<JobTableRow>[]
+}
+const JobsTableBody = React.memo(({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
+  // This memoized component saves re-rendering if the data to display hasn't changed
+  const canDisplay = !dataIsLoading && rowsToRender.length > 0
+  return (
+    <TableBody>
+      {!canDisplay && (
+        <TableRow>
+          {dataIsLoading && (
+            <TableCell colSpan={columns.length}>
+              <CircularProgress />
+            </TableCell>
+          )}
+          {!dataIsLoading && rowsToRender.length === 0 && (
+            <TableCell colSpan={columns.length}>There is no data to display</TableCell>
+          )}
+        </TableRow>
+      )}
+
+      {rowsToRender.map((row) => {
+        const original = row.original
+        const rowIsGroup = isJobGroupRow(original)
+        return (
+          <TableRow key={`${row.id}_d${row.depth}`} aria-label={row.id} hover>
+            {row.getVisibleCells().map((cell) => (
+              <BodyCell
+                cell={cell}
+                rowIsGroup={rowIsGroup}
+                rowIsExpanded={row.getIsExpanded()}
+                onExpandedChange={row.toggleExpanded}
+                subCount={rowIsGroup ? original.count : undefined}
+                key={cell.id}
+              />
+            ))}
+          </TableRow>
+        )
+      })}
+    </TableBody>
+  )
+})
