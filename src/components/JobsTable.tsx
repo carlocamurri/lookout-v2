@@ -206,12 +206,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                           // If the header can be grouped, let's add a toggle
                           <IconButton
                             size="small"
-                            {...{
-                              onClick: header.column.getToggleGroupingHandler(),
-                              style: {
-                                cursor: "pointer",
-                              },
-                            }}
+                            onClick={header.column.getToggleGroupingHandler()}
                           >
                             {header.column.getIsGrouped() ? (
                               <GroupRemoveOutlined fontSize="small" />
@@ -254,31 +249,29 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                   const colSpec = columnSpecFor(cell.column.id as ColumnId)
                   const cellHasValue = cell.renderValue()
                   return (
-                    <TableCell key={cell.id} align={colSpec.isNumeric ? 'right' : 'left'} style={{padding: "0.5em"}}>
+                    <TableCell key={cell.id} 
+                               align={colSpec.isNumeric ? 'right' : 'left'} 
+                               sx={{
+                                padding: "0.5em",
+                                '&:hover': {
+                                  opacity: 0.85
+                                }
+                               }}>
                       {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? (
                         // If it's a grouped cell, add an expander and row count
                         <>
-                          <Button
-                            variant="text"
-                            size="small"
-                            {...{
-                              onClick: () => row.toggleExpanded(),
-                              style: {
-                                cursor: row.getCanExpand() ? "pointer" : "normal",
-                                textTransform: "initial",
-                                padding: "initial",
-                                // paddingLeft: 0,
-                                color: "initial",
-                              },
-                            }}
-                          >
-                            {row.getIsExpanded() ? (
-                              <ExpandMore fontSize="small" />
-                            ) : (
-                              <KeyboardArrowRight fontSize="small" />
-                            )}{" "}
+                          <IconButton
+                              size="small"
+                              edge="start"
+                              onClick={() => row.toggleExpanded()}
+                            >
+                              {row.getIsExpanded() ? (
+                                <ExpandMore fontSize="small" />
+                              ) : (
+                                <KeyboardArrowRight fontSize="small" />
+                              )}
+                            </IconButton>
                             {flexRender(cell.column.columnDef.cell, cell.getContext())} ({original.count})
-                          </Button>
                         </>
                       ) : cell.getIsAggregated() ? (
                         // If the cell is aggregated, use the Aggregated
