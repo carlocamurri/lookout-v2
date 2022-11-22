@@ -22,7 +22,7 @@ import {
   Row,
   useReactTable,
 } from "@tanstack/react-table"
-import React from "react"
+import React, { useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
@@ -44,11 +44,11 @@ type JobsPageProps = {
   selectedColumns: ColumnSpec[]
 }
 export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }: JobsPageProps) => {
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [data, setData] = React.useState<JobTableRow[]>([])
-  const [totalRowCount, setTotalRowCount] = React.useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [data, setData] = useState<JobTableRow[]>([])
+  const [totalRowCount, setTotalRowCount] = useState(0)
 
-  const columns = React.useMemo<ColumnDef<JobRow>[]>(
+  const columns = useMemo<ColumnDef<JobRow>[]>(
     () =>
       selectedColumns.map(
         (c): ColumnDef<JobRow> => ({
@@ -65,10 +65,10 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     [selectedColumns],
   )
 
-  const [grouping, setGrouping] = React.useState<GroupingState>([])
-  const [expanded, setExpanded] = React.useState<ExpandedState>({})
+  const [grouping, setGrouping] = useState<GroupingState>([])
+  const [expanded, setExpanded] = useState<ExpandedState>({})
   const prevExpanded = usePrevious(expanded)
-  const { newlyExpanded, newlyUnexpanded } = React.useMemo(() => {
+  const { newlyExpanded, newlyUnexpanded } = useMemo(() => {
     const prevExpandedKeys = Object.keys(prevExpanded ?? {}) as RowId[]
     const expandedKeys = Object.keys(expanded) as RowId[]
 
@@ -77,12 +77,12 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
     return { newlyExpanded, newlyUnexpanded }
   }, [expanded, prevExpanded])
 
-  const [{ pageIndex, pageSize }, setPagination] = React.useState<PaginationState>({
+  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 30,
   })
-  const [pageCount, setPageCount] = React.useState<number>(-1)
-  const pagination = React.useMemo(
+  const [pageCount, setPageCount] = useState<number>(-1)
+  const pagination = useMemo(
     () => ({
       pageIndex,
       pageSize,
