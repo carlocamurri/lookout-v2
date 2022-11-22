@@ -156,9 +156,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 
     // Grouping
     manualGrouping: true,
-    onGroupingChange: newState => {
-      setExpanded({}); // Reset currently-expanded when grouping changes
-      setGrouping(newState);
+    onGroupingChange: (newState) => {
+      setExpanded({}) // Reset currently-expanded when grouping changes
+      setGrouping(newState)
     },
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
@@ -195,11 +195,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
             ))}
           </TableHead>
 
-          <JobsTableBody
-            dataIsLoading={isLoading}
-            columns={columns}
-            rowsToRender={rowsToRender}
-          />
+          <JobsTableBody dataIsLoading={isLoading} columns={columns} rowsToRender={rowsToRender} />
         </Table>
       </TableContainer>
 
@@ -217,7 +213,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
 }
 
 interface JobsTableBodyProps {
-  dataIsLoading: boolean;
+  dataIsLoading: boolean
   columns: ColumnDef<JobRow>[]
   rowsToRender: Row<JobTableRow>[]
 }

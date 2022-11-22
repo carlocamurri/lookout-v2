@@ -158,7 +158,7 @@ describe("JobsTable", () => {
     await assertNumDataRowsShown(numStates + numJobSets + numQueues + numJobsExpectedToShow, findAllByRole)
   })
 
-  it('should reset currently-expanded if grouping changes', async () => {
+  it("should reset currently-expanded if grouping changes", async () => {
     const numQueues = 2
     const numJobSets = 3
     jobs = makeTestJobs(5, 1, numQueues, numJobSets)
@@ -182,14 +182,14 @@ describe("JobsTable", () => {
     await assertNumDataRowsShown(numQueues + numShownJobs, findAllByRole)
 
     // Assert arrow down icon is shown
-    getByRole("button", {name: /Expanded/i, exact: false})
+    getByRole("button", { name: /Expanded/i, exact: false })
 
     // Group by another header
     await groupByHeader("Job Set", findByText)
 
     // Verify all rows are now collapsed
-    expect(queryByRole("button", {name: /Expanded/i, exact: false})).toBeNull();
-  });
+    expect(queryByRole("button", { name: /Expanded/i, exact: false })).toBeNull()
+  })
 
   async function assertNumDataRowsShown(nDataRows: number, findAllByRole: any) {
     await waitFor(async () => {
