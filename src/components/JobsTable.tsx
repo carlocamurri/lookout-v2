@@ -144,23 +144,23 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
       expanded,
       pagination,
     },
-
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,
     getSubRows: (row) => (isJobGroupRow(row) && row.subRows) || undefined,
 
+    // Grouping
     manualGrouping: true,
     onGroupingChange: setGrouping,
     getGroupedRowModel: getGroupedRowModel(),
-
     getExpandedRowModel: getExpandedRowModel(),
     onExpandedChange: setExpanded,
     autoResetExpanded: false,
     manualExpanding: false,
-    paginateExpandedRows: true,
 
+    // Pagination
     manualPagination: true,
     pageCount: pageCount,
+    paginateExpandedRows: true,
     onPaginationChange: setPagination,
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -169,19 +169,18 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
   const rowsToRender = table.getRowModel().rows
   const canDisplay = !isLoading && rowsToRender.length > 0
   return (
-    <div>
-    <TableContainer component={Paper} sx={{margin: "0px"}}>
-      <Table sx={{marginBottom: "8px"}}>
+    <>
+    <TableContainer component={Paper}>
+      <Table>
         <TableHead>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} hover>
               {headerGroup.headers.map((header) => {
-                console.log("Header", header, header.column.getSize());
                 return (
                   <TableCell key={header.id}
                              style={{
                               minWidth: header.column.getSize(),
-                              padding: "8px"
+                              padding: "0.5em"
                             }}
                   >
                     {header.isPlaceholder ? null : (
@@ -207,6 +206,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                           </IconButton>
                         ) : null}{" "}
                         {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getIsGrouped() && <> (# Jobs)</>}
                       </div>
                     )}
                   </TableCell>
@@ -253,6 +253,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                                 cursor: row.getCanExpand() ? "pointer" : "normal",
                                 textTransform: "initial",
                                 padding: "initial",
+                                // paddingLeft: 0,
                                 color: "initial",
                               },
                             }}
@@ -262,7 +263,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                             ) : (
                               <KeyboardArrowRight fontSize="small" />
                             )}{" "}
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())} (Jobs: {original.count})
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())} ({original.count})
                           </Button>
                         </>
                       ) : cell.getIsAggregated() ? (
@@ -294,6 +295,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           onPageChange={(_, page) => table.setPageIndex(page)}
           onRowsPerPageChange={(e) => table.setPageSize(Number(e.target.value))}
         />
-    </div>
+    </>
   )
 }
