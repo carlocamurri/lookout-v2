@@ -29,10 +29,10 @@ import GetJobsService from "services/GetJobsService"
 import { GroupAddOutlined, GroupRemoveOutlined, ExpandMore, KeyboardArrowRight } from "@mui/icons-material"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
-import { ColumnSpec } from "pages/JobsPage"
 import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
 import { JobTableRow, JobRow, isJobGroupRow } from "models/jobsTableModels"
 import { convertExpandedRowFieldsToFilters, fetchJobGroups, fetchJobs, groupsToRows, jobsToRows } from "utils/jobsTableUtils"
+import { ColumnSpec } from "utils/jobsTableColumns"
 
 type JobsPageProps = {
   getJobsService: GetJobsService
@@ -53,7 +53,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
           header: c.name,
           enableGrouping: c.groupable,
           aggregationFn: () => "-",
-          minSize: c.minSize
+          minSize: c.minSize,
+          size: c.minSize
         }),
       ),
     [selectedColumns],
@@ -177,7 +178,10 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
                 console.log("Header", header, header.column.getSize());
                 return (
                   <TableCell key={header.id}
-                             style={{minWidth: header.column.getSize()}}
+                             style={{
+                              minWidth: header.column.getSize(),
+                              padding: "8px"
+                            }}
                   >
                     {header.isPlaceholder ? null : (
                       <div>

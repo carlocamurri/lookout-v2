@@ -3,13 +3,13 @@ import { expect, jest } from "@jest/globals"
 import { render, within, waitFor, waitForElementToBeRemoved } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Job } from "model"
-import { DEFAULT_COLUMNS } from "pages/JobsPage"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import FakeGetJobsService from "services/mocks/FakeGetJobsService"
 import FakeGroupJobsService from "services/mocks/FakeGroupJobsService"
 import { makeTestJobs } from "utils"
 import { JobsTable } from "./JobsTable"
+import { DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 describe("JobsTable", () => {
   let jobs: Job[], getJobsService: GetJobsService, groupJobsService: GroupJobsService
@@ -25,7 +25,7 @@ describe("JobsTable", () => {
       <JobsTable
         getJobsService={getJobsService}
         groupJobsService={groupJobsService}
-        selectedColumns={DEFAULT_COLUMNS}
+        selectedColumns={DEFAULT_COLUMN_SPECS}
       />,
     )
 
@@ -56,7 +56,7 @@ describe("JobsTable", () => {
     // Check all details for the first job are shown
     const jobToSearchFor = jobs[0]
     const matchingRow = await findByRole("row", { name: "job:" + jobToSearchFor.jobId })
-    DEFAULT_COLUMNS.forEach((col) => {
+    DEFAULT_COLUMN_SPECS.forEach((col) => {
       const expectedText = jobToSearchFor[col.key as keyof Job]
       within(matchingRow).getByText(expectedText!.toString()) // eslint-disable-line @typescript-eslint/no-non-null-assertion
     })

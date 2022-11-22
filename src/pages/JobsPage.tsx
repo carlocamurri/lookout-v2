@@ -8,27 +8,9 @@ import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import styles from "./JobsPage.module.css"
 import { JobsTable } from "components/JobsTable"
+import { ColumnId, ColumnSpec, columnSpecFor, DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 const HEADING_SECTION_HEIGHT = 48
-
-export const DEFAULT_COLUMNS: ColumnSpec[] = [
-  { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false, minSize: 30 },
-  { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
-  { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
-  { key: "state", name: "State", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
-  { key: "cpu", name: "CPU", selected: true, isAnnotation: false, groupable: false },
-  { key: "memory", name: "Memory", selected: true, isAnnotation: false, groupable: false },
-  { key: "ephemeralStorage", name: "Ephemeral Storage", selected: true, isAnnotation: false, groupable: false },
-]
-
-export type ColumnSpec = {
-  key: string
-  name: string
-  selected: boolean
-  isAnnotation: boolean
-  groupable: boolean
-  minSize?: number;
-}
 
 type JobsPageProps = {
   width: number
@@ -38,7 +20,7 @@ type JobsPageProps = {
 }
 
 export default function JobsPage(props: JobsPageProps) {
-  const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMNS)
+  const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMN_SPECS)
 
   function toggleColumn(key: string) {
     const newColumns = columns.map((col) => col)
@@ -53,12 +35,9 @@ export default function JobsPage(props: JobsPageProps) {
   function addAnnotationColumn(name: string) {
     const newColumns = columns.map((col) => col)
     newColumns.push({
-      key: uuidv4(),
-      name: name,
-      selected: true,
-      isAnnotation: true,
-      groupable: true,
-    })
+      ...columnSpecFor(name as ColumnId),
+      isAnnotation: true
+    });
     setColumns(newColumns)
   }
 
