@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useMemo } from "react"
 
 import { createTheme, ThemeProvider } from "@mui/material"
 import { grey, red } from "@mui/material/colors"
@@ -43,47 +43,23 @@ const theme = createTheme({
   },
 })
 
-const NAVBAR_HEIGHT = 64
-
 function App() {
-  const [dims, setDims] = useState({ width: 0, height: 0 })
-
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (ref && ref.current) {
-        setDims({
-          width: ref.current.clientWidth,
-          height: ref.current.clientHeight,
-        })
-      }
-    }
-
-    handleResize()
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      window.removeEventListener("resize", handleResize)
-    }
-  }, [])
-
   const testJobs = useMemo(() => makeTestJobs(10000, 42), [])
+  const jobsService = useMemo(() => new FakeGetJobsService(testJobs), [testJobs])
+  const groupJobsService = useMemo(() => new FakeGroupJobsService(testJobs), [testJobs])
 
   return (
     <ThemeProvider theme={theme}>
-      <div ref={ref} className="App">
+      <div className="App">
         <BrowserRouter>
-          <NavBar height={NAVBAR_HEIGHT} width={dims.width} />
+          <NavBar />
           <Routes>
             <Route
               path="/"
               element={
                 <JobsPage
-                  height={dims.height - NAVBAR_HEIGHT}
-                  width={dims.width}
-                  getJobsService={new FakeGetJobsService(testJobs)}
-                  groupJobsService={new FakeGroupJobsService(testJobs)}
+                  getJobsService={jobsService}
+                  groupJobsService={groupJobsService}
                 />
               }
             />

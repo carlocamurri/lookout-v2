@@ -44,7 +44,7 @@ function locationFromIndex(pages: Page[], index: number): string {
   return "/"
 }
 
-function NavBar(props: { width: number; height: number }) {
+function NavBar() {
   const currentLocation = useLocation().pathname
   const navigate = useNavigate()
 
@@ -53,10 +53,6 @@ function NavBar(props: { width: number; height: number }) {
     <AppBar
       position="static"
       className={styles.container}
-      style={{
-        width: props.width,
-        height: props.height,
-      }}
     >
       <Toolbar>
         <Grid container spacing={2}>

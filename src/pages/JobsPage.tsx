@@ -12,8 +12,6 @@ import { ColumnId, ColumnSpec, columnSpecFor, DEFAULT_COLUMN_SPECS } from "utils
 const HEADING_SECTION_HEIGHT = 48
 
 type JobsPageProps = {
-  width: number
-  height: number
   getJobsService: GetJobsService
   groupJobsService: GroupJobsService
 }
