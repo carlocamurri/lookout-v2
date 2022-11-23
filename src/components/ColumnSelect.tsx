@@ -65,7 +65,7 @@ export default function ColumnSelect({
 
   return (
     <>
-      <FormControl sx={{ m: 0, width: 200 }}>
+      <FormControl sx={{ m: 0, width: 200 }} focused={false}>
         <InputLabel id="checkbox-select-label">Columns</InputLabel>
         <Select
           labelId="checkbox-select-label"
