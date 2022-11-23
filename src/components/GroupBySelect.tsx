@@ -1,94 +1,111 @@
 import React from "react"
 
-import { Clear, DragIndicator } from "@mui/icons-material"
-import { Divider, FormControl, IconButton, InputLabel, MenuItem, OutlinedInput, Select } from "@mui/material"
+import { Clear } from "@mui/icons-material"
+import { Divider, FormControl, IconButton, InputLabel, MenuItem, OutlinedInput, Select, TextField } from "@mui/material"
 
 import styles from "./GroupBySelect.module.css"
-import { ColumnSpec } from "utils/jobsTableColumns"
+import { ColumnId, ColumnSpec } from "utils/jobsTableColumns"
 
 type GroupColumnProps = {
   columns: ColumnSpec[]
-  groups: string[]
-  currentlySelected: string
-  onSelect: (columnKey: string) => void
+  groups: ColumnId[]
+  currentlySelected: ColumnId | ""
+  onSelect: (columnKey: ColumnId) => void
   onDelete: () => void
 }
 
 type GroupBySelectProps = {
-  groups: string[]
+  groups: ColumnId[]
   columns: ColumnSpec[]
-  onSetGroup: (columnKey: string, index: number) => void
-  onDeleteGroup: (index: number) => void
+  onGroupsChanged: (newGroups: ColumnId[]) => void
 }
 
 function isGroupable(column: ColumnSpec): boolean {
-  return ["queue", "jobSet", "state"].includes(column.key) || column.isAnnotation
+  return column.groupable
 }
 
-function GroupColumn({ columns, groups, currentlySelected, onSelect, onDelete }: GroupColumnProps) {
+function GroupColumn({ columns, currentlySelected, onSelect, onDelete }: GroupColumnProps) {
+  const isGrouped = currentlySelected !== "";
+  const actionText = isGrouped ? 'Grouped by' : 'Group by';
   return (
-    <div className={styles.groupByElement}>
-      <DragIndicator style={{ marginRight: 5 }} />
-      <FormControl style={{ marginRight: 5, width: 200 }} size="small">
-        <InputLabel id="select-column-group">Select column</InputLabel>
-        <Select
-          labelId="select-column-group"
-          value={currentlySelected}
-          size="small"
-          sx={{ height: 32 }}
-          input={<OutlinedInput label="Select column" />}
-        >
-          {columns.map((col) => (
-            <MenuItem
-              key={col.key}
-              value={col.key}
-              disabled={groups.includes(col.key)}
-              onClick={() => onSelect(col.key)}
-            >
-              {col.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      {currentlySelected && (
-        <IconButton size="small" onClick={onDelete}>
-          <Clear />
-        </IconButton>
-      )}
-    </div>
+    <FormControl size="small"
+    >
+      <InputLabel
+        id="select-column-group"
+        size="small"
+      >
+        {actionText}
+      </InputLabel>
+      <Select
+        labelId="select-column-group"
+        value={currentlySelected}
+        size="small"
+        sx={{
+          minWidth: 110,
+          paddingRight: "0.5em",
+          "& .MuiSelect-iconOutlined": { display: isGrouped ? 'none' : '' }
+        }}
+        input={<OutlinedInput label={actionText} />}
+        endAdornment={(isGrouped &&
+          <IconButton size="small" sx={{ padding: 0 }} onClick={onDelete}>
+            <Clear aria-label="Clear grouping" aria-hidden="false"/>
+          </IconButton>
+        )}
+      >
+        {columns.map((col) => (
+          <MenuItem
+            key={col.key}
+            value={col.key}
+            disabled={currentlySelected === col.key}
+            onClick={() => onSelect(col.key)}
+          >
+            {col.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
   )
 }
 
-export default function GroupBySelect({ groups, columns, onSetGroup, onDeleteGroup }: GroupBySelectProps) {
+export default function GroupBySelect({ groups, columns, onGroupsChanged }: GroupBySelectProps) {
+  const groupableColumns = columns.filter(isGroupable);
+  const ungroupedColumns = groupableColumns.filter(c => !groups.includes(c.key))
   return (
     <div className={styles.container}>
-      <div style={{ paddingRight: 5 }}>Group by:</div>
-      {groups.map((key, i) => (
-        <>
-          <GroupColumn
-            key={key}
-            columns={columns.filter(isGroupable)}
-            groups={groups}
-            currentlySelected={key}
-            onSelect={(newKey) => {
-              onSetGroup(newKey, i)
-            }}
-            onDelete={() => {
-              onDeleteGroup(i)
-            }}
-          />
-          <Divider style={{ width: 10 }} />
-        </>
-      ))}
-      <GroupColumn
-        columns={columns.filter(isGroupable)}
+      {/* Controls to modify/remove selected groups */}
+      {groups.map((key, i) => {
+        const alreadyListed = groups.slice(0, i)
+        const remainingOptions = groupableColumns.filter(c => !alreadyListed.includes(c.key))
+        return (
+          <React.Fragment key={key}>
+            <GroupColumn
+              columns={remainingOptions}
+              groups={groups}
+              currentlySelected={key}
+              onSelect={(newKey) => {
+                // Resets everything to the right
+                onGroupsChanged(alreadyListed.concat([newKey]))
+              }}
+              onDelete={() => {
+                onGroupsChanged(groups.filter((_, idx) => idx !== i))
+              }}
+            />
+            {remainingOptions.length > 1 && <Divider style={{ width: 10 }} />}
+          </React.Fragment>
+        )
+      })}
+
+      {/* Control for adding a new group */}
+      {ungroupedColumns.length > 0 && <GroupColumn
+        key="new-group"
+        columns={ungroupedColumns}
         groups={groups}
         currentlySelected={""}
         onSelect={(newKey) => {
-          onSetGroup(newKey, groups.length)
+          onGroupsChanged(groups.concat([newKey]))
         }}
         onDelete={() => null}
-      />
+      />}
     </div>
   )
 }
