@@ -35,18 +35,19 @@ import {
   groupsToRows,
   jobsToRows,
 } from "utils/jobsTableUtils"
-import { ColumnId, ColumnSpec } from "utils/jobsTableColumns"
+import { ColumnId, ColumnSpec, DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
+import { JobsTableActionBar } from "./JobsTableActionBar"
 
 type JobsPageProps = {
   getJobsService: GetJobsService
   groupJobsService: GroupJobsService
-  selectedColumns: ColumnSpec[]
 }
-export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }: JobsPageProps) => {
+export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) => {
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<JobTableRow[]>([])
   const [totalRowCount, setTotalRowCount] = useState(0)
+  const [selectedColumns, setSelectedColumns] = useState(DEFAULT_COLUMN_SPECS);
 
   const columns = useMemo<ColumnDef<JobRow>[]>(
     () =>
@@ -178,6 +179,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, selectedColumns }:
   const rowsToRender = table.getRowModel().rows
   return (
     <>
+    <JobsTableActionBar columns={selectedColumns} onColumnsChanged={setSelectedColumns} />
       <TableContainer component={Paper}>
         <Table>
           <TableHead>

@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 
 import { Check, Delete, Edit } from "@mui/icons-material"
-import ViewColumnOutlinedIcon from "@mui/icons-material/ViewColumnOutlined"
 import {
   Button,
   Checkbox,
@@ -20,11 +19,7 @@ import {
 import styles from "./ColumnSelect.module.css"
 import { ColumnSpec } from "utils/jobsTableColumns"
 
-const ITEM_HEIGHT = 54
-const MENU_PADDING = 8
-
 type ColumnSelectProps = {
-  height: number
   columns: ColumnSpec[]
   onAddAnnotation: (annotationKey: string) => void
   onToggleColumn: (columnKey: string) => void
@@ -33,7 +28,6 @@ type ColumnSelectProps = {
 }
 
 export default function ColumnSelect({
-  height,
   columns,
   onAddAnnotation,
   onToggleColumn,
@@ -69,11 +63,8 @@ export default function ColumnSelect({
     }
   }
 
-  const menuHeight = ITEM_HEIGHT * Math.min(12, columns.length)
-
   return (
     <>
-      <ViewColumnOutlinedIcon />
       <FormControl sx={{ m: 0, width: 200 }}>
         <InputLabel id="checkbox-select-label">Columns</InputLabel>
         <Select
@@ -85,21 +76,10 @@ export default function ColumnSelect({
           renderValue={(selected) => {
             return `${selected.length} columns selected`
           }}
-          MenuProps={{
-            PaperProps: {
-              style: {
-                height: menuHeight + 2 * MENU_PADDING,
-                maxWidth: 750,
-              },
-            },
-          }}
-          sx={{ maxHeight: height }}
+          size="small"
         >
           <div
             className={styles.columnMenu}
-            style={{
-              height: menuHeight,
-            }}
           >
             <div className={styles.columnSelect} style={{ height: "100%" }}>
               {columns.map((column) => (
