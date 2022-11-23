@@ -22,7 +22,7 @@ import {
   Row,
   useReactTable,
 } from "@tanstack/react-table"
-import React, { useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
@@ -35,7 +35,7 @@ import {
   groupsToRows,
   jobsToRows,
 } from "utils/jobsTableUtils"
-import { ColumnId, ColumnSpec, DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
+import { ColumnId, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
 import { JobsTableActionBar } from "./JobsTableActionBar"
 
@@ -66,7 +66,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     [selectedColumns],
   )
 
-  const [grouping, setGrouping] = useState<GroupingState>([])
+  const [grouping, setGrouping] = useState<ColumnId[]>(DEFAULT_GROUPING)
   const [expanded, setExpanded] = useState<ExpandedState>({})
   const prevExpanded = usePrevious(expanded)
   const { newlyExpanded, newlyUnexpanded } = useMemo(() => {
@@ -143,6 +143,11 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     fetchData().catch(console.error)
   }, [pagination, grouping, expanded])
 
+  const onGroupingChange = useCallback((newState: ColumnId[]) => {
+    setExpanded({}) // Reset currently-expanded when grouping changes
+    setGrouping(newState)
+  }, [setExpanded, setGrouping]);
+
   const table = useReactTable({
     data: data ?? [],
     columns,
@@ -157,10 +162,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
     // Grouping
     manualGrouping: true,
-    onGroupingChange: (newState) => {
-      setExpanded({}) // Reset currently-expanded when grouping changes
-      setGrouping(newState)
-    },
+    // onGroupingChange: onGroupingChange,
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     onExpandedChange: setExpanded,
@@ -179,7 +181,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
   const rowsToRender = table.getRowModel().rows
   return (
     <>
-    <JobsTableActionBar columns={selectedColumns} onColumnsChanged={setSelectedColumns} />
+      <JobsTableActionBar columns={selectedColumns} groups={grouping} onColumnsChanged={setSelectedColumns} onGroupsChanged={onGroupingChange} />
       <TableContainer component={Paper}>
         <Table>
           <TableHead>

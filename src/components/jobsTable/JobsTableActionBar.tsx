@@ -4,14 +4,17 @@ import ColumnSelect from "components/ColumnSelect"
 import { useState } from "react"
 import { ColumnSpec, DEFAULT_COLUMN_SPECS, columnSpecFor, ColumnId } from "utils/jobsTableColumns"
 import styles from './JobsTableActionBar.module.css';
+import GroupBySelect from 'components/GroupBySelect';
 
 const HEADING_SECTION_HEIGHT = 48
 
 export interface JobsTableActionBarProps {
     columns: ColumnSpec[];
+    groups: ColumnId[];
     onColumnsChanged: (newColumns: ColumnSpec[]) => void;
+    onGroupsChanged: (newGroups: ColumnId[]) => void;
 }
-export const JobsTableActionBar = ({ columns, onColumnsChanged }: JobsTableActionBarProps) => {
+export const JobsTableActionBar = ({ columns, groups, onColumnsChanged, onGroupsChanged }: JobsTableActionBarProps) => {
     // const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMN_SPECS)
 
     function toggleColumn(key: string) {
@@ -50,11 +53,11 @@ export const JobsTableActionBar = ({ columns, onColumnsChanged }: JobsTableActio
 
     return (
         <div className={styles.actionBar}>
-            <Typography className={styles.actionGroup}
-                variant="h4"
-            >
-                Jobs
-            </Typography>
+            <GroupBySelect
+                columns={columns}
+                groups={groups}
+                onGroupsChanged={onGroupsChanged}
+            />
 
             <div className={styles.actionGroup}>
                 <ColumnSelect
