@@ -25,7 +25,6 @@ describe("JobsTable", () => {
       <JobsTable
         getJobsService={getJobsService}
         groupJobsService={groupJobsService}
-        selectedColumns={DEFAULT_COLUMN_SPECS}
       />,
     )
 
