@@ -27,17 +27,18 @@ function isGroupable(column: ColumnSpec): boolean {
 function GroupColumn({ columns, currentlySelected, onSelect, onDelete }: GroupColumnProps) {
   const isGrouped = currentlySelected !== "";
   const actionText = isGrouped ? 'Grouped by' : 'Group by';
+  const labelId = `select-column-group-${currentlySelected}`;
   return (
     <FormControl size="small"
     >
       <InputLabel
-        id="select-column-group"
+        id={labelId}
         size="small"
       >
         {actionText}
       </InputLabel>
       <Select
-        labelId="select-column-group"
+        labelId={labelId}
         value={currentlySelected}
         size="small"
         sx={{
