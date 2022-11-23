@@ -29,8 +29,7 @@ function GroupColumn({ columns, currentlySelected, onSelect, onDelete }: GroupCo
   const actionText = isGrouped ? 'Grouped by' : 'Group by';
   const labelId = `select-column-group-${currentlySelected}`;
   return (
-    <FormControl size="small"
-    >
+    <FormControl size="small" focused={false}>
       <InputLabel
         id={labelId}
         size="small"
