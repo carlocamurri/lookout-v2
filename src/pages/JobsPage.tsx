@@ -1,33 +1,15 @@
 import React, { useState } from "react"
 
 import { Button, Divider, Typography } from "@mui/material"
-import { v4 as uuidv4 } from "uuid"
 
 import ColumnSelect from "components/ColumnSelect"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import styles from "./JobsPage.module.css"
-import { JobsTable } from "components/JobsTable"
+import { JobsTable } from "components/jobsTable/JobsTable"
+import { ColumnId, ColumnSpec, columnSpecFor, DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 const HEADING_SECTION_HEIGHT = 48
-
-export const DEFAULT_COLUMNS: ColumnSpec[] = [
-  { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false },
-  { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true },
-  { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true },
-  { key: "state", name: "State", selected: true, isAnnotation: false, groupable: true },
-  { key: "cpu", name: "CPU", selected: true, isAnnotation: false, groupable: false },
-  { key: "memory", name: "Memory", selected: true, isAnnotation: false, groupable: false },
-  { key: "ephemeralStorage", name: "Ephemeral Storage", selected: true, isAnnotation: false, groupable: false },
-]
-
-export type ColumnSpec = {
-  key: string
-  name: string
-  selected: boolean
-  isAnnotation: boolean
-  groupable: boolean
-}
 
 type JobsPageProps = {
   width: number
@@ -37,7 +19,7 @@ type JobsPageProps = {
 }
 
 export default function JobsPage(props: JobsPageProps) {
-  const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMNS)
+  const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMN_SPECS)
 
   function toggleColumn(key: string) {
     const newColumns = columns.map((col) => col)
@@ -52,11 +34,8 @@ export default function JobsPage(props: JobsPageProps) {
   function addAnnotationColumn(name: string) {
     const newColumns = columns.map((col) => col)
     newColumns.push({
-      key: uuidv4(),
-      name: name,
-      selected: true,
+      ...columnSpecFor(name as ColumnId),
       isAnnotation: true,
-      groupable: true,
     })
     setColumns(newColumns)
   }
@@ -80,14 +59,13 @@ export default function JobsPage(props: JobsPageProps) {
     <div
       className={styles.container}
       style={{
-        width: props.width,
-        height: props.height,
+        width: "100%",
       }}
     >
       <div
         className={styles.header}
         style={{
-          width: props.width,
+          width: "100%",
           height: HEADING_SECTION_HEIGHT,
         }}
       >
@@ -143,11 +121,13 @@ export default function JobsPage(props: JobsPageProps) {
           </div>
         </div>
       </div>
-      <JobsTable
-        getJobsService={props.getJobsService}
-        groupJobsService={props.groupJobsService}
-        selectedColumns={columns}
-      />
+      <div className={styles.jobsTable}>
+        <JobsTable
+          getJobsService={props.getJobsService}
+          groupJobsService={props.groupJobsService}
+          selectedColumns={columns}
+        />
+      </div>
     </div>
   )
 }
