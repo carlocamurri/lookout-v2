@@ -13,14 +13,16 @@ import {
   OutlinedInput,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material"
 
 import styles from "./ColumnSelect.module.css"
-import { ColumnSpec } from "utils/jobsTableColumns"
+import { ColumnId, ColumnSpec } from "utils/jobsTableColumns"
 
 type ColumnSelectProps = {
   allColumns: ColumnSpec[]
+  groupedColumns: ColumnId[]
   onAddAnnotation: (annotationKey: string) => void
   onToggleColumn: (columnKey: string) => void
   onRemoveAnnotation: (columnKey: string) => void
@@ -29,6 +31,7 @@ type ColumnSelectProps = {
 
 export default function ColumnSelect({
   allColumns,
+  groupedColumns,
   onAddAnnotation,
   onToggleColumn,
   onRemoveAnnotation,
@@ -82,69 +85,76 @@ export default function ColumnSelect({
             className={styles.columnMenu}
           >
             <div className={styles.columnSelect} style={{ height: "100%" }}>
-              {allColumns.map((column) => (
-                <MenuItem key={column.key} value={column.name}>
-                  <Checkbox checked={column.selected} onClick={() => onToggleColumn(column.key)} />
-                  {column.isAnnotation ? (
-                    <>
-                      {currentlyEditing.has(column.key) ? (
-                        <>
-                          <TextField
-                            label="Annotation Key"
-                            size="small"
-                            variant="standard"
-                            value={currentlyEditing.get(column.key)}
-                            onChange={(e) => edit(column.key, e.target.value)}
-                            style={{
-                              maxWidth: 350,
-                            }}
-                            fullWidth={true}
-                          />
-                          <IconButton
-                            onClick={() => {
-                              if (currentlyEditing.has(column.key)) {
-                                onEditAnnotation(column.key, currentlyEditing.get(column.key) ?? "")
-                              }
-                              stopEditing(column.key)
-                            }}
-                          >
-                            <Check />
-                          </IconButton>
-                        </>
-                      ) : (
-                        <>
-                          <ListItemText
-                            primary={column.name}
-                            style={{
-                              maxWidth: 350,
-                              overflowX: "auto",
-                            }}
-                          />
-                          <IconButton onClick={() => edit(column.key, column.name)}>
-                            <Edit />
-                          </IconButton>
-                        </>
-                      )}
-                      <IconButton
-                        onClick={() => {
-                          stopEditing(column.key)
-                          onRemoveAnnotation(column.key)
+              {allColumns.map((column) => {
+                const colIsGrouped = groupedColumns.includes(column.key);
+                return (
+                  <MenuItem
+                    key={column.key}
+                    value={column.name}
+                    disabled={colIsGrouped}
+                  >
+                    <Checkbox checked={column.selected} onClick={() => onToggleColumn(column.key)} />
+                    {column.isAnnotation ? (
+                      <>
+                        {currentlyEditing.has(column.key) ? (
+                          <>
+                            <TextField
+                              label="Annotation Key"
+                              size="small"
+                              variant="standard"
+                              value={currentlyEditing.get(column.key)}
+                              onChange={(e) => edit(column.key, e.target.value)}
+                              style={{
+                                maxWidth: 350,
+                              }}
+                              fullWidth={true}
+                            />
+                            <IconButton
+                              onClick={() => {
+                                if (currentlyEditing.has(column.key)) {
+                                  onEditAnnotation(column.key, currentlyEditing.get(column.key) ?? "")
+                                }
+                                stopEditing(column.key)
+                              }}
+                            >
+                              <Check />
+                            </IconButton>
+                          </>
+                        ) : (
+                          <>
+                            <ListItemText
+                              primary={column.name}
+                              style={{
+                                maxWidth: 350,
+                                overflowX: "auto",
+                              }}
+                            />
+                            <IconButton onClick={() => edit(column.key, column.name)}>
+                              <Edit />
+                            </IconButton>
+                          </>
+                        )}
+                        <IconButton
+                          onClick={() => {
+                            stopEditing(column.key)
+                            onRemoveAnnotation(column.key)
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </>
+                    ) : (
+                      <ListItemText
+                        primary={column.name + (colIsGrouped ? " (Grouped)" : "")}
+                        style={{
+                          maxWidth: 350,
+                          overflowX: "auto",
                         }}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </>
-                  ) : (
-                    <ListItemText
-                      primary={column.name}
-                      style={{
-                        maxWidth: 350,
-                        overflowX: "auto",
-                      }}
-                    />
-                  )}
-                </MenuItem>
-              ))}
+                      />
+                    )}
+                  </MenuItem>
+                )
+              })}
             </div>
             <Divider orientation="vertical" style={{ height: "100%" }} />
             <div className={styles.annotationSelectContainer}>

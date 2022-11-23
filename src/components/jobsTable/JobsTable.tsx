@@ -148,8 +148,15 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
   const onGroupingChange = useCallback((newState: ColumnId[]) => {
     setExpanded({}) // Reset currently-expanded when grouping changes
+
+    // Check all grouping columns are displayed
+    setAllColumns(allColumns.map(col => ({
+      ...col,
+      selected: newState.includes(col.key) ? true : col.selected
+    })))
+
     setGrouping([...newState])
-  }, [setExpanded, setGrouping]);
+  }, [setExpanded, setAllColumns, allColumns, setGrouping]);
 
   const table = useReactTable({
     data: data ?? [],
