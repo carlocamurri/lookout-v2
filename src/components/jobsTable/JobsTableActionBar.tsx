@@ -12,9 +12,9 @@ export interface JobsTableActionBarProps {
     onColumnsChanged: (newColumns: ColumnSpec[]) => void;
     onGroupsChanged: (newGroups: ColumnId[]) => void;
 }
-export const JobsTableActionBar = ({ allColumns: columns, groupedColumns: groups, onColumnsChanged, onGroupsChanged }: JobsTableActionBarProps) => {
+export const JobsTableActionBar = ({ allColumns, groupedColumns, onColumnsChanged, onGroupsChanged }: JobsTableActionBarProps) => {
     function toggleColumn(key: string) {
-        const newColumns = columns.map((col) => col)
+        const newColumns = allColumns.map((col) => col)
         for (let i = 0; i < newColumns.length; i++) {
             if (newColumns[i].key === key) {
                 newColumns[i].selected = !newColumns[i].selected
@@ -24,7 +24,7 @@ export const JobsTableActionBar = ({ allColumns: columns, groupedColumns: groups
     }
 
     function addAnnotationColumn(name: string) {
-        const newColumns = columns.map((col) => col)
+        const newColumns = allColumns.map((col) => col)
         newColumns.push({
             ...columnSpecFor(name as ColumnId),
             isAnnotation: true,
@@ -33,12 +33,12 @@ export const JobsTableActionBar = ({ allColumns: columns, groupedColumns: groups
     }
 
     function removeAnnotationColumn(key: string) {
-        const filtered = columns.filter((col) => col.key !== key)
+        const filtered = allColumns.filter((col) => col.key !== key)
         onColumnsChanged(filtered)
     }
 
     function editAnnotationColumn(key: string, name: string) {
-        const newColumns = columns.map((col) => col)
+        const newColumns = allColumns.map((col) => col)
         for (let i = 0; i < newColumns.length; i++) {
             if (newColumns[i].key === key) {
                 newColumns[i].name = name
@@ -50,14 +50,15 @@ export const JobsTableActionBar = ({ allColumns: columns, groupedColumns: groups
     return (
         <div className={styles.actionBar}>
             <GroupBySelect
-                columns={columns}
-                groups={groups}
+                columns={allColumns}
+                groups={groupedColumns}
                 onGroupsChanged={onGroupsChanged}
             />
 
             <div className={styles.actionGroup}>
                 <ColumnSelect
-                    allColumns={columns}
+                    allColumns={allColumns}
+                    groupedColumns={groupedColumns}
                     onAddAnnotation={addAnnotationColumn}
                     onToggleColumn={toggleColumn}
                     onEditAnnotation={editAnnotationColumn}
