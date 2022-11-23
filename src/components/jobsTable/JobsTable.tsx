@@ -47,23 +47,25 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<JobTableRow[]>([])
   const [totalRowCount, setTotalRowCount] = useState(0)
-  const [selectedColumns, setSelectedColumns] = useState(DEFAULT_COLUMN_SPECS);
+  const [allColumns, setAllColumns] = useState(DEFAULT_COLUMN_SPECS);
 
-  const columns = useMemo<ColumnDef<JobRow>[]>(
+  const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(
     () =>
-      selectedColumns.map(
-        (c): ColumnDef<JobRow> => ({
-          id: c.key,
-          accessorKey: c.key,
-          header: c.name,
-          enableGrouping: c.groupable,
-          aggregationFn: () => "-",
-          minSize: c.minSize,
-          size: c.minSize,
-          ...(c.formatter ? { cell: (info) => c.formatter?.(info.getValue()) } : {}),
-        }),
-      ),
-    [selectedColumns],
+      allColumns
+        .filter(c => c.selected)
+        .map(
+          (c): ColumnDef<JobTableRow> => ({
+            id: c.key,
+            accessorKey: c.key,
+            header: c.name,
+            enableGrouping: c.groupable,
+            aggregationFn: () => "-",
+            minSize: c.minSize,
+            size: c.minSize,
+            ...(c.formatter ? { cell: (info) => c.formatter?.(info.getValue()) } : {}),
+          }),
+        ),
+    [allColumns],
   )
 
   const [grouping, setGrouping] = useState<ColumnId[]>(DEFAULT_GROUPING)
@@ -124,7 +126,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
         totalCount = totalJobs
       } else {
         const groupedCol = grouping[expandedLevel]
-        const colsToAggregate = selectedColumns.filter((c) => c.groupable).map((c) => c.key)
+        const colsToAggregate = allColumns.filter((c) => c.groupable).map((c) => c.key)
         const { groups, totalGroups } = await fetchJobGroups(rowRequest, groupJobsService, groupedCol, colsToAggregate)
         newData = groupsToRows(groups, expandedRowInfo?.rowId, groupedCol)
         totalCount = totalGroups
@@ -150,7 +152,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
   const table = useReactTable({
     data: data ?? [],
-    columns,
+    columns: selectedColumnDefs,
     state: {
       grouping,
       expanded,
@@ -181,7 +183,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
   const rowsToRender = table.getRowModel().rows
   return (
     <>
-      <JobsTableActionBar columns={selectedColumns} groups={grouping} onColumnsChanged={setSelectedColumns} onGroupsChanged={onGroupingChange} />
+      <JobsTableActionBar allColumns={allColumns} groupedColumns={grouping} onColumnsChanged={setAllColumns} onGroupsChanged={onGroupingChange} />
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -199,7 +201,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
             ))}
           </TableHead>
 
-          <JobsTableBody dataIsLoading={isLoading} columns={columns} rowsToRender={rowsToRender} />
+          <JobsTableBody dataIsLoading={isLoading} columns={selectedColumnDefs} rowsToRender={rowsToRender} />
         </Table>
       </TableContainer>
 
@@ -218,7 +220,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
 interface JobsTableBodyProps {
   dataIsLoading: boolean
-  columns: ColumnDef<JobRow>[]
+  columns: ColumnDef<JobTableRow>[]
   rowsToRender: Row<JobTableRow>[]
 }
 const JobsTableBody = React.memo(({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
