@@ -6,17 +6,13 @@ import { ColumnSpec, DEFAULT_COLUMN_SPECS, columnSpecFor, ColumnId } from "utils
 import styles from './JobsTableActionBar.module.css';
 import GroupBySelect from 'components/GroupBySelect';
 
-const HEADING_SECTION_HEIGHT = 48
-
 export interface JobsTableActionBarProps {
-    columns: ColumnSpec[];
-    groups: ColumnId[];
+    allColumns: ColumnSpec[];
+    groupedColumns: ColumnId[];
     onColumnsChanged: (newColumns: ColumnSpec[]) => void;
     onGroupsChanged: (newGroups: ColumnId[]) => void;
 }
-export const JobsTableActionBar = ({ columns, groups, onColumnsChanged, onGroupsChanged }: JobsTableActionBarProps) => {
-    // const [columns, setColumns] = useState<ColumnSpec[]>(DEFAULT_COLUMN_SPECS)
-
+export const JobsTableActionBar = ({ allColumns: columns, groupedColumns: groups, onColumnsChanged, onGroupsChanged }: JobsTableActionBarProps) => {
     function toggleColumn(key: string) {
         const newColumns = columns.map((col) => col)
         for (let i = 0; i < newColumns.length; i++) {
@@ -61,7 +57,7 @@ export const JobsTableActionBar = ({ columns, groups, onColumnsChanged, onGroups
 
             <div className={styles.actionGroup}>
                 <ColumnSelect
-                    columns={columns}
+                    allColumns={columns}
                     onAddAnnotation={addAnnotationColumn}
                     onToggleColumn={toggleColumn}
                     onEditAnnotation={editAnnotationColumn}
