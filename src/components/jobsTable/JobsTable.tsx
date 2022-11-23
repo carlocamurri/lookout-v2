@@ -69,6 +69,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
   )
 
   const [grouping, setGrouping] = useState<ColumnId[]>(DEFAULT_GROUPING)
+  const prevGrouping = usePrevious(grouping);
   const [expanded, setExpanded] = useState<ExpandedState>({})
   const prevExpanded = usePrevious(expanded)
   const { newlyExpanded, newlyUnexpanded } = useMemo(() => {
@@ -99,7 +100,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     async function fetchData() {
       // TODO: Support filtering
 
-      if (newlyUnexpanded.length > 0) {
+      if (grouping === prevGrouping && newlyUnexpanded.length > 0) {
         console.log("Not fetching new data since we're unexpanding")
         return
       }
@@ -147,7 +148,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
   const onGroupingChange = useCallback((newState: ColumnId[]) => {
     setExpanded({}) // Reset currently-expanded when grouping changes
-    setGrouping(newState)
+    setGrouping([...newState])
   }, [setExpanded, setGrouping]);
 
   const table = useReactTable({
