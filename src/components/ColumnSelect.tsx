@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import { useState } from "react"
 
 import { Check, Delete, Edit } from "@mui/icons-material"
 import {
@@ -13,7 +13,6 @@ import {
   OutlinedInput,
   Select,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material"
 
@@ -81,18 +80,12 @@ export default function ColumnSelect({
           }}
           size="small"
         >
-          <div
-            className={styles.columnMenu}
-          >
+          <div className={styles.columnMenu}>
             <div className={styles.columnSelect} style={{ height: "100%" }}>
               {allColumns.map((column) => {
-                const colIsGrouped = groupedColumns.includes(column.key);
+                const colIsGrouped = groupedColumns.includes(column.key)
                 return (
-                  <MenuItem
-                    key={column.key}
-                    value={column.name}
-                    disabled={colIsGrouped}
-                  >
+                  <MenuItem key={column.key} value={column.name} disabled={colIsGrouped}>
                     <Checkbox checked={column.selected} onClick={() => onToggleColumn(column.key)} />
                     {column.isAnnotation ? (
                       <>

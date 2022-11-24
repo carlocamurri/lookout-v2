@@ -25,9 +25,8 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
   const isRightAligned = shouldRightAlign(colSpec)
 
   // To be used for sorting icons in future
-  // @eslint-disable-next-line
-  const isHovered = id === hoveredColumn
-  
+  const _isHovered = id === hoveredColumn
+
   return (
     <TableCell
       key={id}
@@ -75,7 +74,7 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
       {rowIsGroup && cell.column.getIsGrouped() && cellHasValue ? (
         // If it's a grouped cell, add an expander and row count
         <>
-          <IconButton size="small" sx={{padding: 0}} edge="start" onClick={() => onExpandedChange()}>
+          <IconButton size="small" sx={{ padding: 0 }} edge="start" onClick={() => onExpandedChange()}>
             {rowIsExpanded ? (
               <KeyboardArrowDown fontSize="small" aria-label="Collapse row" aria-hidden="false" />
             ) : (

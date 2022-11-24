@@ -12,7 +12,8 @@ import { JobsTable } from "./JobsTable"
 import { DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 describe("JobsTable", () => {
-  let numQueues = 2, numJobSets = 3;
+  const numQueues = 2,
+    numJobSets = 3
   let jobs: Job[], getJobsService: GetJobsService, groupJobsService: GroupJobsService
 
   beforeEach(() => {
@@ -22,12 +23,7 @@ describe("JobsTable", () => {
   })
 
   const renderComponent = () =>
-    render(
-      <JobsTable
-        getJobsService={getJobsService}
-        groupJobsService={groupJobsService}
-      />,
-    )
+    render(<JobsTable getJobsService={getJobsService} groupJobsService={groupJobsService} />)
 
   it("should render a spinner while loading initially", async () => {
     getJobsService.getJobs = jest.fn(() => new Promise(() => undefined))
@@ -188,11 +184,11 @@ describe("JobsTable", () => {
   }
 
   async function groupByColumn(columnDisplayName: string) {
-    const groupByDropdownButton = await screen.findByRole("button", {name: "Group by"})
-    userEvent.click(groupByDropdownButton);
+    const groupByDropdownButton = await screen.findByRole("button", { name: "Group by" })
+    userEvent.click(groupByDropdownButton)
 
-    const dropdown = await screen.findByRole("listbox");
-    const colToGroup = await within(dropdown).findByText(columnDisplayName);
+    const dropdown = await screen.findByRole("listbox")
+    const colToGroup = await within(dropdown).findByText(columnDisplayName)
     userEvent.click(colToGroup)
   }
 

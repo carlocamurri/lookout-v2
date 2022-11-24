@@ -45,7 +45,7 @@ const COLUMN_SPECS: ColumnSpec[] = [
 
 export const DEFAULT_COLUMNS: ColumnId[] = ["queue", "jobSet", "jobId", "state", "cpu", "memory", "ephemeralStorage"]
 
-export const DEFAULT_GROUPING: ColumnId[] = [];
+export const DEFAULT_GROUPING: ColumnId[] = []
 
 const COLUMN_SPEC_MAP = COLUMN_SPECS.reduce<Record<ColumnId, ColumnSpec>>((map, spec) => {
   map[spec.key] = spec
