@@ -12,6 +12,8 @@
     flex-direction: row;
     column-gap: 0.5em;
 }
+
+/* Pull the last action group to the right-hand side */
 .actionBar .actionGroup:last-child {
     margin-left: auto;
 }

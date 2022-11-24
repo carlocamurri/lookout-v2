@@ -17,36 +17,33 @@ export const JobsTableActionBar = ({
   onGroupsChanged,
 }: JobsTableActionBarProps) => {
   function toggleColumn(key: string) {
-    const newColumns = allColumns.map((col) => col)
-    for (let i = 0; i < newColumns.length; i++) {
-      if (newColumns[i].key === key) {
-        newColumns[i].selected = !newColumns[i].selected
-      }
-    }
+    const newColumns = allColumns.map((col) => ({
+      ...col,
+      selected: col.key === key ? !col.selected : col.selected,
+    }))
     onColumnsChanged(newColumns)
   }
 
   function addAnnotationColumn(name: string) {
-    const newColumns = allColumns.map((col) => col)
-    newColumns.push({
-      ...columnSpecFor(name as ColumnId),
-      isAnnotation: true,
-    })
+    const newColumns = allColumns.concat([
+      {
+        ...columnSpecFor(name as ColumnId),
+        isAnnotation: true,
+      },
+    ])
     onColumnsChanged(newColumns)
   }
 
   function removeAnnotationColumn(key: string) {
-    const filtered = allColumns.filter((col) => col.key !== key)
+    const filtered = allColumns.filter((col) => !col.isAnnotation || col.key !== key)
     onColumnsChanged(filtered)
   }
 
-  function editAnnotationColumn(key: string, name: string) {
-    const newColumns = allColumns.map((col) => col)
-    for (let i = 0; i < newColumns.length; i++) {
-      if (newColumns[i].key === key) {
-        newColumns[i].name = name
-      }
-    }
+  function editAnnotationColumn(key: string, newName: string) {
+    const newColumns = allColumns.map((col) => ({
+      ...col,
+      name: col.key === key ? newName : col.name,
+    }))
     onColumnsChanged(newColumns)
   }
 
