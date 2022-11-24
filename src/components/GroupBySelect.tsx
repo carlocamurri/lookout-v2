@@ -6,24 +6,17 @@ import { Divider, FormControl, IconButton, InputLabel, MenuItem, OutlinedInput, 
 import styles from "./GroupBySelect.module.css"
 import { ColumnId, ColumnSpec } from "utils/jobsTableColumns"
 
-type GroupColumnProps = {
+function isGroupable(column: ColumnSpec): boolean {
+  return column.groupable
+}
+
+interface GroupColumnProps {
   columns: ColumnSpec[]
   groups: ColumnId[]
   currentlySelected: ColumnId | ""
   onSelect: (columnKey: ColumnId) => void
   onDelete: () => void
 }
-
-type GroupBySelectProps = {
-  groups: ColumnId[]
-  columns: ColumnSpec[]
-  onGroupsChanged: (newGroups: ColumnId[]) => void
-}
-
-function isGroupable(column: ColumnSpec): boolean {
-  return column.groupable
-}
-
 function GroupColumn({ columns, currentlySelected, onSelect, onDelete }: GroupColumnProps) {
   const isGrouped = currentlySelected !== "";
   const actionText = isGrouped ? 'Grouped by' : 'Group by';
@@ -67,6 +60,11 @@ function GroupColumn({ columns, currentlySelected, onSelect, onDelete }: GroupCo
   )
 }
 
+export interface GroupBySelectProps {
+  groups: ColumnId[]
+  columns: ColumnSpec[]
+  onGroupsChanged: (newGroups: ColumnId[]) => void
+}
 export default function GroupBySelect({ groups, columns, onGroupsChanged }: GroupBySelectProps) {
   const groupableColumns = columns.filter(isGroupable);
   const ungroupedColumns = groupableColumns.filter(c => !groups.includes(c.key))
