@@ -1,7 +1,7 @@
 import { capitalize } from "lodash"
 import { Job } from "model"
 
-export type ColumnId = keyof Job
+export type ColumnId = keyof Job | 'selectorCol';
 export type ColumnSpec = {
   key: ColumnId
   name: string
