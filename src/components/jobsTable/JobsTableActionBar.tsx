@@ -52,7 +52,9 @@ export const JobsTableActionBar = ({
 
   return (
     <div className={styles.actionBar}>
-      <GroupBySelect columns={allColumns} groups={groupedColumns} onGroupsChanged={onGroupsChanged} />
+      <div className={styles.actionGroup}>
+        <GroupBySelect columns={allColumns} groups={groupedColumns} onGroupsChanged={onGroupsChanged} />
+      </div>
 
       <div className={styles.actionGroup}>
         <ColumnSelect
