@@ -12,7 +12,11 @@ module.exports = {
       version: "detect",
     },
   },
-  extends: ["plugin:react/recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+  extends: [
+    "plugin:react/recommended", 
+    "plugin:@typescript-eslint/recommended", 
+    "prettier"
+  ],
   plugins: ["prettier", "eslint-plugin-import"],
   rules: {
     "prettier/prettier": [
@@ -27,11 +31,13 @@ module.exports = {
     "react/display-name": "off",
     "@typescript-eslint/no-unused-vars": [
       "warn",
-      { 
+      {
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
         "caughtErrorsIgnorePattern": "^_"
       }
-    ]
+    ],
+    // Not needed with react-jsx
+    "react/react-in-jsx-scope": "off",
   },
 }

@@ -1,5 +1,4 @@
-import React from "react"
-import { GroupRemoveOutlined, GroupAddOutlined, KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
+import { KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
 import { TableCell, IconButton } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"
 import { JobRow } from "models/jobsTableModels"
@@ -22,8 +21,11 @@ export interface HeaderCellProps {
 export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellProps) => {
   const id = header.id as ColumnId
   const colSpec = columnSpecFor(id)
-  const isHovered = id === hoveredColumn
   const isRightAligned = shouldRightAlign(colSpec)
+
+  // To be used for sorting icons in future
+  const _isHovered = id === hoveredColumn
+
   return (
     <TableCell
       key={id}
@@ -41,16 +43,6 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
         <>
           {flexRender(header.column.columnDef.header, header.getContext())}
           {header.column.getIsGrouped() && <> (# Jobs)</>}
-          {header.column.getCanGroup() && isHovered ? (
-            // If the header can be grouped, let's add a toggle
-            <IconButton size="small" onClick={header.column.getToggleGroupingHandler()}>
-              {header.column.getIsGrouped() ? (
-                <GroupRemoveOutlined fontSize="small" aria-hidden="false" aria-label="Group By" />
-              ) : (
-                <GroupAddOutlined fontSize="small" aria-hidden="false" aria-label="Ungroup By" />
-              )}
-            </IconButton>
-          ) : null}{" "}
         </>
       )}
     </TableCell>
@@ -81,7 +73,7 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
       {rowIsGroup && cell.column.getIsGrouped() && cellHasValue ? (
         // If it's a grouped cell, add an expander and row count
         <>
-          <IconButton size="small" edge="start" onClick={() => onExpandedChange()}>
+          <IconButton size="small" sx={{ padding: 0 }} edge="start" onClick={() => onExpandedChange()}>
             {rowIsExpanded ? (
               <KeyboardArrowDown fontSize="small" aria-label="Collapse row" aria-hidden="false" />
             ) : (

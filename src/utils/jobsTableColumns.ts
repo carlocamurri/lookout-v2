@@ -43,7 +43,9 @@ const COLUMN_SPECS: ColumnSpec[] = [
   { key: "ephemeralStorage", name: "Eph. Storage", selected: true, isAnnotation: false, groupable: false, minSize: 95 },
 ]
 
-export const DEFAULT_COLUMNS: ColumnId[] = ["jobId", "jobSet", "queue", "state", "cpu", "memory", "ephemeralStorage"]
+export const DEFAULT_COLUMNS: ColumnId[] = ["queue", "jobSet", "jobId", "state", "cpu", "memory", "ephemeralStorage"]
+
+export const DEFAULT_GROUPING: ColumnId[] = []
 
 const COLUMN_SPEC_MAP = COLUMN_SPECS.reduce<Record<ColumnId, ColumnSpec>>((map, spec) => {
   map[spec.key] = spec
