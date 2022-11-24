@@ -1,4 +1,3 @@
-import React from "react"
 import { KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
 import { TableCell, IconButton } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"

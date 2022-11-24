@@ -1,4 +1,3 @@
-import React from "react"
 import { expect, jest } from "@jest/globals"
 import { render, within, waitFor, waitForElementToBeRemoved, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"

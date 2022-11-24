@@ -21,7 +21,7 @@ import {
   Row,
   useReactTable,
 } from "@tanstack/react-table"
-import React, { useCallback, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import { usePrevious } from "hooks/usePrevious"
@@ -93,9 +93,9 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     [pageIndex, pageSize],
   )
 
-  const [hoveredHeaderColumn, setHoveredHeaderColumn] = React.useState<ColumnId | undefined>(undefined)
+  const [hoveredHeaderColumn, setHoveredHeaderColumn] = useState<ColumnId | undefined>(undefined)
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchData() {
       // TODO: Support filtering
 
@@ -240,7 +240,7 @@ interface JobsTableBodyProps {
   columns: ColumnDef<JobTableRow>[]
   rowsToRender: Row<JobTableRow>[]
 }
-const JobsTableBody = React.memo(({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
+const JobsTableBody = memo(({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
   // This memoized component saves re-rendering if the data to display hasn't changed
   const canDisplay = !dataIsLoading && rowsToRender.length > 0
   return (

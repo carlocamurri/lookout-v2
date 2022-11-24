@@ -1,5 +1,3 @@
-import React from "react"
-
 import { AppBar, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import Grid from "@mui/material/Grid"
 import { Link, useLocation, useNavigate } from "react-router-dom"

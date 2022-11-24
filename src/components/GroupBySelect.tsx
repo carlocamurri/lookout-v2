@@ -1,10 +1,9 @@
-import React from "react"
-
 import { Clear } from "@mui/icons-material"
 import { Divider, FormControl, IconButton, InputLabel, MenuItem, OutlinedInput, Select } from "@mui/material"
 
 import styles from "./GroupBySelect.module.css"
 import { ColumnId, ColumnSpec } from "utils/jobsTableColumns"
+import { Fragment } from "react"
 
 function isGroupable(column: ColumnSpec): boolean {
   return column.groupable
@@ -76,7 +75,7 @@ export default function GroupBySelect({ groups, columns, onGroupsChanged }: Grou
         const alreadyListed = groups.slice(0, i)
         const remainingOptions = groupableColumns.filter((c) => !alreadyListed.includes(c.key))
         return (
-          <React.Fragment key={key}>
+          <Fragment key={key}>
             <GroupColumn
               columns={remainingOptions}
               groups={groups}
@@ -90,7 +89,7 @@ export default function GroupBySelect({ groups, columns, onGroupsChanged }: Grou
               }}
             />
             {remainingOptions.length > 1 && <Divider style={{ width: 10 }} />}
-          </React.Fragment>
+          </Fragment>
         )
       })}
 
