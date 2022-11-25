@@ -53,6 +53,7 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
 
 export interface BodyCellProps {
   cell: Cell<JobRow, unknown>
+  // cellContents: JSX.Element
   rowIsGroup: boolean
   rowIsExpanded: boolean
   onExpandedChange: () => void
@@ -71,7 +72,6 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
         ...sharedCellStyle,
       }}
     >
-      {/* {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? ( */}
       {rowIsGroup && cell.column.getIsGrouped() && cellHasValue ? (
         // If it's a grouped cell, add an expander and row count
         <>

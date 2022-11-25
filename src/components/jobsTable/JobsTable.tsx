@@ -9,6 +9,7 @@ import {
   CircularProgress,
   TablePagination,
   Checkbox,
+  TableFooter,
 } from "@mui/material"
 import {
   ColumnDef,
@@ -51,7 +52,6 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
   const [data, setData] = useState<JobTableRow[]>([])
   const [totalRowCount, setTotalRowCount] = useState(0)
   const [allColumns, setAllColumns] = useState(DEFAULT_COLUMN_SPECS)
-
 
   const [grouping, setGrouping] = useState<ColumnId[]>(DEFAULT_GROUPING)
   const prevGrouping = usePrevious(grouping)
@@ -150,39 +150,36 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     [setExpanded, setAllColumns, allColumns, setGrouping],
   )
 
-  const tableState = useMemo(() => ({
-    grouping,
-    expanded,
-    pagination,
-    rowSelection: selectedRows
-  }), [grouping, expanded, pagination, selectedRows]);
-
-  const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(
-    () => {
-      const fixedStartColumns = [getSelectedColumnDef()];
-      const restOfColumns = [
-        ...grouping.map(columnSpecFor),
-        ...allColumns.filter(c => c.selected && !grouping.includes(c.key))
-      ].map(
-        (c): ColumnDef<JobTableRow> => ({
-          id: c.key,
-          accessorKey: c.key,
-          header: c.name,
-          enableGrouping: c.groupable,
-          aggregationFn: () => "-",
-          minSize: c.minSize,
-          size: c.minSize,
-          ...(c.formatter ? { cell: (info) => c.formatter?.(info.getValue()) } : {}),
-        }),
-      );
-        
-        return [
-          ...fixedStartColumns,
-          ...restOfColumns
-        ]
-      },
-    [allColumns, grouping],
+  const tableState = useMemo(
+    () => ({
+      grouping,
+      expanded,
+      pagination,
+      rowSelection: selectedRows,
+    }),
+    [grouping, expanded, pagination, selectedRows],
   )
+
+  const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(() => {
+    const fixedStartColumns = [getSelectedColumnDef()]
+    const restOfColumns = [
+      ...grouping.map(columnSpecFor),
+      ...allColumns.filter((c) => c.selected && !grouping.includes(c.key)),
+    ].map(
+      (c): ColumnDef<JobTableRow> => ({
+        id: c.key,
+        accessorKey: c.key,
+        header: c.name,
+        enableGrouping: c.groupable,
+        aggregationFn: () => "-",
+        minSize: c.minSize,
+        size: c.minSize,
+        ...(c.formatter ? { cell: (info) => c.formatter?.(info.getValue()) } : {}),
+      }),
+    )
+
+    return [...fixedStartColumns, ...restOfColumns]
+  }, [allColumns, grouping])
 
   const table = useReactTable({
     data: data ?? [],
@@ -219,23 +216,25 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
   // Update any new children of selected rows
   useMemo(() => {
-    console.log({selectedRows});
-    const selectedRowIds = Object.keys(selectedRows) as RowId[];
-    selectedRowIds.forEach(rowId => {
+    console.log({ selectedRows })
+    const selectedRowIds = Object.keys(selectedRows) as RowId[]
+    selectedRowIds.forEach((rowId) => {
       try {
-        const row = table.getRow(rowId);
+        const row = table.getRow(rowId)
         if (row.getIsSelected() && !row.getIsSomeSelected()) {
-          row.subRows.forEach(subRow => {
+          row.subRows.forEach((subRow) => {
             if (!subRow.getIsSelected()) {
               subRow.toggleSelected(true)
             }
           })
         }
       } catch (e) {
-        console.warn("Could not update all selected subrows for row: " + rowId, e);
+        console.warn("Could not update all selected subrows for row: " + rowId, e)
       }
     })
   }, [data])
+
+  console.log(selectedRows)
 
   const rowsToRender = table.getRowModel().rows
   return (
@@ -263,23 +262,28 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
             ))}
           </TableHead>
 
-          <JobsTableBody 
-            dataIsLoading={isLoading} 
-            columns={selectedColumnDefs} 
-            rowsToRender={rowsToRender} 
+          <JobsTableBody
+            dataIsLoading={isLoading}
+            columns={selectedColumnDefs}
+            rowsToRender={rowsToRender}
+            tableState={tableState}
           />
+
+          <TableFooter>
+            <TableRow>
+              <TablePagination
+                rowsPerPageOptions={[10, 20, 30, 40, 50]}
+                count={totalRowCount}
+                rowsPerPage={pageSize}
+                page={pageIndex}
+                onPageChange={(_, page) => table.setPageIndex(page)}
+                onRowsPerPageChange={(e) => table.setPageSize(Number(e.target.value))}
+                colSpan={selectedColumnDefs.length}
+              />
+            </TableRow>
+          </TableFooter>
         </Table>
       </TableContainer>
-
-      <TablePagination
-        rowsPerPageOptions={[10, 20, 30, 40, 50]}
-        component="div"
-        count={totalRowCount}
-        rowsPerPage={pageSize}
-        page={pageIndex}
-        onPageChange={(_, page) => table.setPageIndex(page)}
-        onRowsPerPageChange={(e) => table.setPageSize(Number(e.target.value))}
-      />
     </>
   )
 }
@@ -288,9 +292,9 @@ interface JobsTableBodyProps {
   dataIsLoading: boolean
   columns: ColumnDef<JobTableRow>[]
   rowsToRender: Row<JobTableRow>[]
+  tableState: any
 }
-const JobsTableBody = ({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
-  // This memoized component saves re-rendering if the data to display hasn't changed
+const JobsTableBody = ({ dataIsLoading, columns, rowsToRender, tableState }: JobsTableBodyProps) => {
   const canDisplay = !dataIsLoading && rowsToRender.length > 0
   return (
     <TableBody>
