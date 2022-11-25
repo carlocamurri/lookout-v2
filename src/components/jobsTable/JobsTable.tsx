@@ -217,17 +217,19 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     getFilteredRowModel: getFilteredRowModel(),
   })
 
-  console.log({selectedRows});
-
   // Update any new children of selected rows
-  useEffect(() => {
+  useMemo(() => {
     console.log({selectedRows});
     const selectedRowIds = Object.keys(selectedRows) as RowId[];
     selectedRowIds.forEach(rowId => {
       try {
         const row = table.getRow(rowId);
         if (row.getIsSelected() && !row.getIsSomeSelected()) {
-          row.subRows.forEach(subRow => subRow.toggleSelected(true))
+          row.subRows.forEach(subRow => {
+            if (!subRow.getIsSelected()) {
+              subRow.toggleSelected(true)
+            }
+          })
         }
       } catch (e) {
         console.warn("Could not update all selected subrows for row: " + rowId, e);
@@ -261,7 +263,11 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
             ))}
           </TableHead>
 
-          <JobsTableBody dataIsLoading={isLoading} columns={selectedColumnDefs} rowsToRender={rowsToRender} tableState={tableState} />
+          <JobsTableBody 
+            dataIsLoading={isLoading} 
+            columns={selectedColumnDefs} 
+            rowsToRender={rowsToRender} 
+          />
         </Table>
       </TableContainer>
 
@@ -282,11 +288,8 @@ interface JobsTableBodyProps {
   dataIsLoading: boolean
   columns: ColumnDef<JobTableRow>[]
   rowsToRender: Row<JobTableRow>[]
-
-  // Used to bust the memo cache if table state changes
-  tableState: Partial<TableState>
 }
-const JobsTableBody = memo(({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
+const JobsTableBody = ({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
   // This memoized component saves re-rendering if the data to display hasn't changed
   const canDisplay = !dataIsLoading && rowsToRender.length > 0
   return (
@@ -324,4 +327,4 @@ const JobsTableBody = memo(({ dataIsLoading, columns, rowsToRender }: JobsTableB
       })}
     </TableBody>
   )
-})
+}
