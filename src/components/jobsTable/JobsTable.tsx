@@ -8,12 +8,11 @@ import {
   TableBody,
   CircularProgress,
   TablePagination,
-  Checkbox,
   TableFooter,
 } from "@mui/material"
 import {
   ColumnDef,
-  ExpandedState,
+  ExpandedStateList,
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
@@ -22,13 +21,12 @@ import {
   PaginationState,
   Row,
   RowSelectionState,
-  TableState,
   useReactTable,
+  Table as TanstackTable,
 } from "@tanstack/react-table"
-import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
-import { usePrevious } from "hooks/usePrevious"
 import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
 import { JobTableRow, isJobGroupRow } from "models/jobsTableModels"
 import {
@@ -37,11 +35,17 @@ import {
   fetchJobs,
   groupsToRows,
   jobsToRows,
+  diffOfKeys,
+  normaliseExpandedState,
 } from "utils/jobsTableUtils"
 import { ColumnId, columnSpecFor, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
 import { JobsTableActionBar } from "./JobsTableActionBar"
 import { getSelectedColumnDef } from "./SelectedColumn"
+import { useStateWithPrevious } from "hooks/useStateWithPrevious"
+import _ from "lodash"
+
+const DEFAULT_PAGE_SIZE = 30
 
 type JobsPageProps = {
   getJobsService: GetJobsService
@@ -53,46 +57,43 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
   const [totalRowCount, setTotalRowCount] = useState(0)
   const [allColumns, setAllColumns] = useState(DEFAULT_COLUMN_SPECS)
 
-  const [grouping, setGrouping] = useState<ColumnId[]>(DEFAULT_GROUPING)
-  const prevGrouping = usePrevious(grouping)
-  const [expanded, setExpanded] = useState<ExpandedState>({})
-  const prevExpanded = usePrevious(expanded)
-  const { newlyExpanded, newlyUnexpanded } = useMemo(() => {
-    const prevExpandedKeys = Object.keys(prevExpanded ?? {}) as RowId[]
-    const expandedKeys = Object.keys(expanded) as RowId[]
-
-    const newlyExpanded: RowId[] = expandedKeys.filter((e) => !prevExpandedKeys.includes(e))
-    const newlyUnexpanded: RowId[] = prevExpandedKeys.filter((e) => !expandedKeys.includes(e))
-    return { newlyExpanded, newlyUnexpanded }
-  }, [expanded, prevExpanded])
+  const [grouping, setGrouping, prevGrouping] = useStateWithPrevious<ColumnId[]>(DEFAULT_GROUPING)
+  const [expanded, setExpanded, prevExpanded] = useStateWithPrevious<ExpandedStateList>({})
+  const [newlyExpanded, newlyUnexpanded] = useMemo(
+    () => diffOfKeys<RowId>(expanded, prevExpanded),
+    [expanded, prevExpanded],
+  )
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({})
 
-  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+  const [pagination, setPagination, prevPagination] = useStateWithPrevious<PaginationState>({
     pageIndex: 0,
-    pageSize: 30,
+    pageSize: DEFAULT_PAGE_SIZE,
   })
   const [pageCount, setPageCount] = useState<number>(-1)
-  const pagination = useMemo(
-    () => ({
-      pageIndex,
-      pageSize,
-    }),
-    [pageIndex, pageSize],
-  )
+  const { pageIndex, pageSize } = useMemo(() => pagination, [pagination])
 
   const [hoveredHeaderColumn, setHoveredHeaderColumn] = useState<ColumnId | undefined>(undefined)
 
   useEffect(() => {
     async function fetchData() {
       // TODO: Support filtering
+      const groupingUnchanged = _.isEqual(grouping, prevGrouping)
+      const expandedUnchanged = _.isEqual(expanded, prevExpanded)
+      const paginationUnchanged = _.isEqual(pagination, prevPagination)
 
-      if (grouping === prevGrouping && newlyUnexpanded.length > 0) {
-        console.log("Not fetching new data since we're unexpanding")
+      // Relying purely on useEffect's dependencies array doesn't work perfectly (e.g. for hot reloads)
+      if (groupingUnchanged && expandedUnchanged && paginationUnchanged) {
+        console.log("Not fetching any data as no relevant state has changed")
+        return
+      }
+
+      if (groupingUnchanged && paginationUnchanged && newlyUnexpanded.length > 0) {
+        console.log("Not fetching new data since we're only unexpanding")
         return
       }
 
       if (newlyExpanded.length > 1) {
-        console.warn("More than one newly expanded!", { newlyExpanded })
+        console.warn("More than one newly expanded! This may be a bug.", { newlyExpanded })
       }
 
       const expandedRowInfo = newlyExpanded.length > 0 ? fromRowId(newlyExpanded[0]) : undefined
@@ -103,8 +104,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
       const rowRequest = {
         filters: convertExpandedRowFieldsToFilters(expandedRowInfo?.rowIdPartsPath ?? []),
         skip: expandedRowInfo ? 0 : pageIndex * pageSize,
-        // take: expandedRowInfo ? Number.MAX_SAFE_INTEGER : pageSize,
-        take: pageSize,
+        take: expandedRowInfo ? Number.MAX_SAFE_INTEGER : pageSize,
       }
 
       let newData, totalCount
@@ -181,7 +181,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     return [...fixedStartColumns, ...restOfColumns]
   }, [allColumns, grouping])
 
-  const table = useReactTable({
+  const table: TanstackTable<JobTableRow> = useReactTable({
     data: data ?? [],
     columns: selectedColumnDefs,
     state: tableState,
@@ -200,7 +200,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     // onGroupingChange: onGroupingChange,
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    onExpandedChange: setExpanded,
+    onExpandedChange: (updatedState) => setExpanded(normaliseExpandedState(updatedState, expanded, table)),
     autoResetExpanded: false,
     manualExpanding: false,
     groupedColumnMode: false, // Retain manual control over column ordering
@@ -216,7 +216,6 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
   // Update any new children of selected rows
   useMemo(() => {
-    console.log({ selectedRows })
     const selectedRowIds = Object.keys(selectedRows) as RowId[]
     selectedRowIds.forEach((rowId) => {
       try {
@@ -233,8 +232,6 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
       }
     })
   }, [data])
-
-  console.log(selectedRows)
 
   const rowsToRender = table.getRowModel().rows
   return (
@@ -266,7 +263,6 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
             dataIsLoading={isLoading}
             columns={selectedColumnDefs}
             rowsToRender={rowsToRender}
-            tableState={tableState}
           />
 
           <TableFooter>
@@ -292,9 +288,8 @@ interface JobsTableBodyProps {
   dataIsLoading: boolean
   columns: ColumnDef<JobTableRow>[]
   rowsToRender: Row<JobTableRow>[]
-  tableState: any
 }
-const JobsTableBody = ({ dataIsLoading, columns, rowsToRender, tableState }: JobsTableBodyProps) => {
+const JobsTableBody = ({ dataIsLoading, columns, rowsToRender }: JobsTableBodyProps) => {
   const canDisplay = !dataIsLoading && rowsToRender.length > 0
   return (
     <TableBody>

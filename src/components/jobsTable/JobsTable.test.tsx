@@ -178,7 +178,7 @@ describe("JobsTable", () => {
   async function assertNumDataRowsShown(nDataRows: number) {
     await waitFor(async () => {
       const rows = await screen.findAllByRole("row")
-      expect(rows.length).toBe(nDataRows + 1) // One row per data row, plus the header row
+      expect(rows.length).toBe(nDataRows + 2) // One row per data row, plus the header and footer rows
     })
   }
 

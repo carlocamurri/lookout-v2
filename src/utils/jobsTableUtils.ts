@@ -1,5 +1,7 @@
+import { ExpandedState, Table, Updater } from "@tanstack/react-table"
+import _ from "lodash"
 import { Job, JobFilter, JobGroup, JobOrder } from "model"
-import { JobRow, JobGroupRow } from "models/jobsTableModels"
+import { JobRow, JobGroupRow, JobTableRow } from "models/jobsTableModels"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import { RowIdParts, toRowId, RowId } from "./reactTableUtils"
@@ -68,4 +70,30 @@ export const groupsToRows = (
       subRows: [], // Will be set later if expanded
     }),
   )
+}
+
+export const diffOfKeys = <K extends string | number | symbol>(
+  currentObject?: Record<K, unknown>,
+  oldObject?: Record<K, unknown>,
+): [K[], K[]] => {
+  const currentKeys = new Set(Object.keys(currentObject ?? {}) as K[])
+  const prevKeys = new Set(Object.keys(oldObject ?? {}) as K[])
+
+  const addedKeys = Array.from(currentKeys).filter((e) => !prevKeys.has(e))
+  const removedKeys = Array.from(prevKeys).filter((e) => !currentKeys.has(e))
+  return [addedKeys, removedKeys]
+}
+
+export const normaliseExpandedState = (
+  updaterOrValue: Updater<ExpandedState>,
+  currentState: ExpandedState,
+  table: Table<JobTableRow>,
+) => {
+  const newValue = typeof updaterOrValue === "function" ? updaterOrValue(currentState) : updaterOrValue
+  if (typeof newValue === "boolean") {
+    const allRowsExpanded = _.fromPairs(table.getRowModel().flatRows.map((r) => [r.id, true]))
+    return allRowsExpanded
+  } else {
+    return newValue
+  }
 }
