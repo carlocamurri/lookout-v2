@@ -135,7 +135,9 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
   const onGroupingChange = useCallback(
     (newState: ColumnId[]) => {
-      setExpanded({}) // Reset currently-expanded when grouping changes
+      // Reset currently expanded/selected when grouping changes
+      setSelectedRows({})
+      setExpanded({}) 
 
       // Check all grouping columns are displayed
       setAllColumns(
@@ -197,7 +199,6 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
     // Grouping
     manualGrouping: true,
-    // onGroupingChange: onGroupingChange,
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     onExpandedChange: (updatedState) => setExpanded(normaliseExpandedState(updatedState, expanded, table)),
