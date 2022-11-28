@@ -22,7 +22,8 @@ import {
   Row,
   RowSelectionState,
   useReactTable,
-  Table as TanstackTable,
+  Updater,
+  ExpandedState,
 } from "@tanstack/react-table"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
@@ -36,7 +37,7 @@ import {
   groupsToRows,
   jobsToRows,
   diffOfKeys,
-  normaliseExpandedState,
+  updaterToValue,
 } from "utils/jobsTableUtils"
 import { ColumnId, columnSpecFor, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
@@ -137,7 +138,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     (newState: ColumnId[]) => {
       // Reset currently expanded/selected when grouping changes
       setSelectedRows({})
-      setExpanded({}) 
+      setExpanded({})
 
       // Check all grouping columns are displayed
       setAllColumns(
@@ -149,7 +150,31 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
 
       setGrouping([...newState])
     },
-    [setExpanded, setAllColumns, allColumns, setGrouping],
+    [setSelectedRows, setExpanded, setAllColumns, allColumns, setGrouping],
+  )
+
+  const onPaginationChange = useCallback(
+    (updater: Updater<PaginationState>) => {
+      const newPagination = updaterToValue(updater, pagination)
+      // Reset currently expanded/selected when grouping changes
+      // TODO: Consider allowing rows to be selected across pages?
+      setSelectedRows({})
+      setExpanded({})
+      setPagination(newPagination)
+    },
+    [pagination, setPagination, setSelectedRows, setExpanded],
+  )
+
+  const onExpandedChange = useCallback(
+    (updater: Updater<ExpandedState>) => {
+      const newExpandedOrBool = updaterToValue(updater, expanded)
+      const newExpanded =
+        typeof newExpandedOrBool === "boolean"
+          ? _.fromPairs(table.getRowModel().flatRows.map((r) => [r.id, true]))
+          : newExpandedOrBool
+      setExpanded(newExpanded)
+    },
+    [setExpanded, expanded],
   )
 
   const tableState = useMemo(
@@ -183,7 +208,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     return [...fixedStartColumns, ...restOfColumns]
   }, [allColumns, grouping])
 
-  const table: TanstackTable<JobTableRow> = useReactTable({
+  const table = useReactTable({
     data: data ?? [],
     columns: selectedColumnDefs,
     state: tableState,
@@ -201,7 +226,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     manualGrouping: true,
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    onExpandedChange: (updatedState) => setExpanded(normaliseExpandedState(updatedState, expanded, table)),
+    onExpandedChange: onExpandedChange,
     autoResetExpanded: false,
     manualExpanding: false,
     groupedColumnMode: false, // Retain manual control over column ordering
@@ -210,7 +235,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     manualPagination: true,
     pageCount: pageCount,
     paginateExpandedRows: true,
-    onPaginationChange: setPagination,
+    onPaginationChange: onPaginationChange,
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   })
@@ -260,11 +285,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
             ))}
           </TableHead>
 
-          <JobsTableBody
-            dataIsLoading={isLoading}
-            columns={selectedColumnDefs}
-            rowsToRender={rowsToRender}
-          />
+          <JobsTableBody dataIsLoading={isLoading} columns={selectedColumnDefs} rowsToRender={rowsToRender} />
 
           <TableFooter>
             <TableRow>
