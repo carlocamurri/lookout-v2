@@ -45,6 +45,7 @@ import { JobsTableActionBar } from "./JobsTableActionBar"
 import { getSelectedColumnDef } from "./SelectedColumn"
 import { useStateWithPrevious } from "hooks/useStateWithPrevious"
 import _ from "lodash"
+import { JobId } from "model"
 
 const DEFAULT_PAGE_SIZE = 30
 
@@ -65,6 +66,14 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     [expanded, prevExpanded],
   )
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({})
+  const selectedJobs: JobId[] = useMemo(() => 
+    Object.keys(selectedRows)
+      .map((rowId) => {
+        const {rowIdPartsPath} = fromRowId(rowId as RowId)
+        return rowIdPartsPath.find(part => part.type === "job")?.value;
+      })
+      .filter((jobId): jobId is JobId => jobId !== undefined),
+    [selectedRows]);
 
   const [pagination, setPagination, prevPagination] = useStateWithPrevious<PaginationState>({
     pageIndex: 0,
@@ -265,6 +274,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
       <JobsTableActionBar
         allColumns={allColumns}
         groupedColumns={grouping}
+        selectedJobs={selectedJobs}
         onColumnsChanged={setAllColumns}
         onGroupsChanged={onGroupingChange}
       />

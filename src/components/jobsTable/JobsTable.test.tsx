@@ -1,4 +1,3 @@
-import { expect, jest } from "@jest/globals"
 import { render, within, waitFor, waitForElementToBeRemoved, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Job } from "model"
@@ -175,6 +174,30 @@ describe("JobsTable", () => {
     waitForElementToBeRemoved(() => queryAllByRole("button", { name: "Expand row" }))
   })
 
+  it("should allow selecting of jobs", async () => {
+    const { getByRole, findByRole } = renderComponent()
+    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+
+    expect(await findByRole("button", {name: "Cancel"})).toBeDisabled()
+    expect(await findByRole("button", {name: "Reprioritize"})).toBeDisabled()
+
+    toggleSelectedRow(jobs[0].jobId);
+    toggleSelectedRow(jobs[2].jobId);
+
+    expect(await findByRole("button", {name: "Cancel 2 jobs"})).toBeEnabled()
+    expect(await findByRole("button", {name: "Reprioritize 2 jobs"})).toBeEnabled()
+
+    toggleSelectedRow(jobs[2].jobId);
+
+    expect(await findByRole("button", {name: "Cancel 1 job"})).toBeEnabled()
+    expect(await findByRole("button", {name: "Reprioritize 1 job"})).toBeEnabled()
+
+    toggleSelectedRow(jobs[0].jobId);
+
+    expect(await findByRole("button", {name: "Cancel"})).toBeDisabled()
+    expect(await findByRole("button", {name: "Reprioritize"})).toBeDisabled()
+  })
+
   async function assertNumDataRowsShown(nDataRows: number) {
     await waitFor(async () => {
       const rows = await screen.findAllByRole("row")
@@ -197,5 +220,11 @@ describe("JobsTable", () => {
     })
     const expandButton = within(rowToExpand).getByRole("button", { name: "Expand row" })
     userEvent.click(expandButton)
+  }
+
+  async function toggleSelectedRow(jobId: string) {
+    const matchingRow = await screen.findByRole("row", { name: "job:" + jobId })
+    const checkbox = await within(matchingRow).findByRole("checkbox");
+    userEvent.click(checkbox);
   }
 })
