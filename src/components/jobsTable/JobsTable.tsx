@@ -66,14 +66,16 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
     [expanded, prevExpanded],
   )
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({})
-  const selectedJobs: JobId[] = useMemo(() => 
-    Object.keys(selectedRows)
-      .map((rowId) => {
-        const {rowIdPartsPath} = fromRowId(rowId as RowId)
-        return rowIdPartsPath.find(part => part.type === "job")?.value;
-      })
-      .filter((jobId): jobId is JobId => jobId !== undefined),
-    [selectedRows]);
+  const selectedJobs: JobId[] = useMemo(
+    () =>
+      Object.keys(selectedRows)
+        .map((rowId) => {
+          const { rowIdPartsPath } = fromRowId(rowId as RowId)
+          return rowIdPartsPath.find((part) => part.type === "job")?.value
+        })
+        .filter((jobId): jobId is JobId => jobId !== undefined),
+    [selectedRows],
+  )
 
   const [pagination, setPagination, prevPagination] = useStateWithPrevious<PaginationState>({
     pageIndex: 0,
@@ -279,7 +281,7 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
         onGroupsChanged={onGroupingChange}
       />
       <TableContainer component={Paper}>
-        <Table sx={{tableLayout: "auto"}}>
+        <Table sx={{ tableLayout: "auto" }}>
           <TableHead>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

@@ -8,7 +8,7 @@ const Checkbox = memo(MuiCheckbox)
 
 export const SELECT_COLUMN_ID: ColumnId = "selectorCol"
 export const getSelectedColumnDef = (): ColumnDef<JobTableRow> => {
-  const fixedWidthPixels = 50;
+  const fixedWidthPixels = 50
   return {
     id: SELECT_COLUMN_ID as ColumnId,
     minSize: fixedWidthPixels,

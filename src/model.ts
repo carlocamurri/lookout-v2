@@ -25,7 +25,7 @@ type ColoredState = {
   color: string
 }
 
-export type JobId = string;
+export type JobId = string
 
 export type Job = {
   jobId: JobId

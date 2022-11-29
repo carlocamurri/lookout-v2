@@ -46,7 +46,7 @@ export const JobsTableActionBar = memo(
       onColumnsChanged(newColumns)
     }
 
-    const jobCount = selectedJobs.length;
+    const jobCount = selectedJobs.length
     const jobCountString = `${jobCount} job${jobCount === 1 ? "" : "s"}`
 
     return (
@@ -65,8 +65,12 @@ export const JobsTableActionBar = memo(
             onRemoveAnnotation={removeAnnotationColumn}
           />
           <Divider orientation="vertical" />
-          <Button variant="contained" disabled={jobCount === 0}>Cancel{jobCount > 0 ? ` ${jobCountString}` : ""}</Button>
-          <Button variant="contained" disabled={jobCount === 0}>Reprioritize{jobCount > 0 ? ` ${jobCountString}` : ""}</Button>
+          <Button variant="contained" disabled={jobCount === 0}>
+            Cancel{jobCount > 0 ? ` ${jobCountString}` : ""}
+          </Button>
+          <Button variant="contained" disabled={jobCount === 0}>
+            Reprioritize{jobCount > 0 ? ` ${jobCountString}` : ""}
+          </Button>
         </div>
       </div>
     )
