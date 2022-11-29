@@ -30,9 +30,8 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
     <TableCell
       key={id}
       align={isRightAligned ? "right" : "left"}
-      size="small"
       sx={{
-        minWidth: header.column.getSize(),
+        width: `${header.column.getSize()}px`,
         lineHeight: "2.5em", // Provides enough height for icon buttons
         ...sharedCellStyle,
       }}
@@ -69,7 +68,6 @@ export const BodyCell = ({ cell, rowIsGroup, rowIsExpanded, onExpandedChange, su
         ...sharedCellStyle,
       }}
     >
-      {/* {rowIsGrouped && cell.column.getIsGrouped() && cellHasValue ? ( */}
       {rowIsGroup && cell.column.getIsGrouped() && cellHasValue ? (
         // If it's a grouped cell, add an expander and row count
         <>

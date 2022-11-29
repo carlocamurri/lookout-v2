@@ -25,8 +25,10 @@ type ColoredState = {
   color: string
 }
 
+export type JobId = string
+
 export type Job = {
-  jobId: string
+  jobId: JobId
   queue: string
   owner: string
   jobSet: string
