@@ -50,7 +50,6 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
 
 export interface BodyCellProps {
   cell: Cell<JobRow, unknown>
-  // cellContents: JSX.Element
   rowIsGroup: boolean
   rowIsExpanded: boolean
   onExpandedChange: () => void
