@@ -1,3 +1,4 @@
+import { getSelectedColumnDef } from "components/jobsTable/SelectedColumn"
 import { capitalize } from "lodash"
 import { Job } from "model"
 

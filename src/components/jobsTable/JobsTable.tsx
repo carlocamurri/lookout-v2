@@ -274,12 +274,12 @@ export const JobsTable = ({ getJobsService, groupJobsService }: JobsPageProps) =
       <JobsTableActionBar
         allColumns={allColumns}
         groupedColumns={grouping}
-        selectedJobs={selectedJobs}
+        selectedJobs={selectedJobs} // TODO: This may need to be change to reflect that queues/jobsets can be selected (e.g. to cancel all within)
         onColumnsChanged={setAllColumns}
         onGroupsChanged={onGroupingChange}
       />
       <TableContainer component={Paper}>
-        <Table>
+        <Table sx={{tableLayout: "auto"}}>
           <TableHead>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

@@ -30,11 +30,8 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
     <TableCell
       key={id}
       align={isRightAligned ? "right" : "left"}
-      size="small"
       sx={{
-        minWidth: `${header.column.getSize()}px`,
         width: `${header.column.getSize()}px`,
-        maxWidth: `${header.column.getSize()}px`,
         lineHeight: "2.5em", // Provides enough height for icon buttons
         ...sharedCellStyle,
       }}
