@@ -6,7 +6,7 @@ import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import { RowIdParts, toRowId, RowId } from "./reactTableUtils"
 
-export const convertExpandedRowFieldsToFilters = (expandedRowIdParts: RowIdParts[]): JobFilter[] => {
+export const convertRowPartsToFilters = (expandedRowIdParts: RowIdParts[]): JobFilter[] => {
   const filters: JobFilter[] = expandedRowIdParts.map(({ type, value }) => ({
     field: type,
     value,
@@ -64,10 +64,14 @@ export const groupsToRows = (
     (group): JobGroupRow => ({
       rowId: toRowId({ type: groupingField, value: group.name, parentRowId: baseRowId }),
       [groupingField]: group.name,
+      groupedField: groupingField,
 
       isGroup: true,
-      count: group.count,
-      subRows: [], // Will be set later if expanded
+      jobCount: group.count,
+
+      // Will be set later if expanded
+      subRowCount: undefined,
+      subRows: [],
     }),
   )
 }

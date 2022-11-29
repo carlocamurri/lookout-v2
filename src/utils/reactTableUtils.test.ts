@@ -82,7 +82,7 @@ describe("ReactTableUtils", () => {
       existingData = [{ rowId: "fruit:apple" }]
       newRows = [{ rowId: "fruit:banana" }]
       locationForSubRows = []
-      const result = mergeSubRows(existingData, newRows, locationForSubRows)
+      const result = mergeSubRows(existingData, newRows, locationForSubRows, false)
       expect(result).toStrictEqual(newRows)
     })
 
@@ -94,7 +94,7 @@ describe("ReactTableUtils", () => {
       newRows = [{ rowId: "taste:delicious" }]
       locationForSubRows = ["fruit:banana"]
 
-      const result = mergeSubRows(existingData, newRows, locationForSubRows)
+      const result = mergeSubRows(existingData, newRows, locationForSubRows, false)
 
       expect(result).toStrictEqual([
         { rowId: "fruit:apple", subRows: [] },
@@ -110,7 +110,7 @@ describe("ReactTableUtils", () => {
       newRows = [{ rowId: "taste:delicious" }]
       locationForSubRows = ["fruit:avocado"]
 
-      const result = mergeSubRows(existingData, newRows, locationForSubRows)
+      const result = mergeSubRows(existingData, newRows, locationForSubRows, false)
 
       expect(result).toStrictEqual(existingData)
     })

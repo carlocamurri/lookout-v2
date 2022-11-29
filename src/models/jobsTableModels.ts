@@ -17,7 +17,9 @@ export interface JobRow extends BaseJobTableRow {
 
 export interface JobGroupRow extends BaseJobTableRow {
   isGroup: true // The ReactTable version of this doesn't seem to play nice with manual/serverside expanding
-  count?: number
+  jobCount?: number
+
+  subRowCount?: number
   subRows?: JobTableRow[]
 
   // Some subfield of JobRow that this row is grouped on
@@ -26,4 +28,4 @@ export interface JobGroupRow extends BaseJobTableRow {
 
 export type JobTableRow = JobRow | JobGroupRow
 
-export const isJobGroupRow = (row: JobTableRow): row is JobGroupRow => "isGroup" in row
+export const isJobGroupRow = (row?: JobTableRow): row is JobGroupRow => row !== undefined && "isGroup" in row

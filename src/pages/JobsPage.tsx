@@ -8,12 +8,13 @@ type JobsPageProps = {
   height: number
   getJobsService: GetJobsService
   groupJobsService: GroupJobsService
+  debug: boolean
 }
 
 export default function JobsPage(props: JobsPageProps) {
   return (
     <div className={styles.jobsTable}>
-      <JobsTable getJobsService={props.getJobsService} groupJobsService={props.groupJobsService} />
+      <JobsTable getJobsService={props.getJobsService} groupJobsService={props.groupJobsService} debug={props.debug} />
     </div>
   )
 }

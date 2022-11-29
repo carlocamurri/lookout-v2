@@ -1,5 +1,8 @@
 // E.g. "job:1", or "queue:queue-2"
 // Format comes from ReactTable grouping, see https://github.com/TanStack/table/blob/main/packages/table-core/src/utils/getGroupedRowModel.ts#L59
+
+import { isJobGroupRow, JobGroupRow, JobTableRow } from "models/jobsTableModels"
+
 // It's convenient to just use this same format everywhere
 export type RowIdSegment = `${string}:${string}`
 
@@ -57,34 +60,37 @@ export interface RowWithOptionalSubRows {
 /**
  * Merges new rows (which may or may not be subrows) with existing data.
  */
-export const mergeSubRows = (
-  existingData: RowWithOptionalSubRows[],
-  newSubRows: RowWithOptionalSubRows[],
-  locationForSubRows: RowId[],
-): RowWithOptionalSubRows[] => {
+export const mergeSubRows = (existingData: JobTableRow[], newSubRows: JobTableRow[], locationForSubRows: RowId[], appendSubRows: boolean) => {
   // Just return if this is the top-level data
   if (locationForSubRows.length === 0) {
-    return newSubRows
+    return { rootData: newSubRows }
   }
 
   // Otherwise merge it into existing data
-  const rowToModify = locationForSubRows.reduce<RowWithOptionalSubRows | undefined>(
+  const rowToModify: JobGroupRow | undefined = locationForSubRows.reduce<JobGroupRow | undefined>(
     (row, rowIdToFind) => {
-      // TODO: Change subRows to a set to optimise this lookup
-      const candidateRow = row?.subRows?.find((r) => r.rowId === rowIdToFind)
-      if (candidateRow && candidateRow.subRows !== undefined) {
-        return candidateRow
+      if (isJobGroupRow(row)) {
+        const candidateRow: JobTableRow | undefined = row.subRows?.find((r) => r.rowId === rowIdToFind)
+        if (isJobGroupRow(candidateRow)) {
+          return candidateRow
+        }
       }
+      // TODO: Change subRows to a set to optimise this lookup
     },
-    { subRows: existingData } as RowWithOptionalSubRows,
+    { isGroup: true, subRows: existingData } as JobGroupRow,
   )
 
   // Modifies in-place for now
   if (rowToModify) {
-    rowToModify.subRows = newSubRows
+    if (appendSubRows) {
+      rowToModify.subRows = (rowToModify.subRows ?? []).concat(newSubRows)
+    } else {
+      rowToModify.subRows = newSubRows;
+    }
+    
   } else {
     console.warn("Could not find row to merge with path. This is a bug.", locationForSubRows)
   }
 
-  return existingData
+  return { rootData: existingData, parentRow: rowToModify }
 }
