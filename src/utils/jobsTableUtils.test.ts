@@ -1,7 +1,7 @@
 import { convertRowPartsToFilters, diffOfKeys } from "./jobsTableUtils"
 
 describe("JobsTableUtils", () => {
-  describe("convertExpandedRowFieldsToFilters", () => {
+  describe("convertRowPartsToFilters", () => {
     it("returns empty if not expanding a row", () => {
       const result = convertRowPartsToFilters([])
       expect(result).toStrictEqual([])

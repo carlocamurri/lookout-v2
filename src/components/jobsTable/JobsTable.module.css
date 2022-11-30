@@ -1,6 +1,9 @@
 
-
-.depthIndicator {
+.rowDepthIndicator {
   background-image: linear-gradient(rgba(224, 224, 224, 1), rgba(224, 224, 224, 1));
   background-repeat: no-repeat;
+}
+
+.loadMoreRow {
+  background-color: rgba(224, 224, 224, 0.35);
 }

@@ -20,10 +20,11 @@ export interface JobGroupRow extends BaseJobTableRow {
   jobCount?: number
 
   subRowCount?: number
-  subRows?: JobTableRow[]
+  subRows: JobTableRow[]
 
   // Some subfield of JobRow that this row is grouped on
   [groupedField: string]: unknown
+  groupedField: string
 }
 
 export type JobTableRow = JobRow | JobGroupRow

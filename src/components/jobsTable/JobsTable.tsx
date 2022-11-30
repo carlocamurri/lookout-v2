@@ -30,7 +30,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
 import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
-import { JobTableRow, isJobGroupRow } from "models/jobsTableModels"
+import { JobTableRow, isJobGroupRow, JobRow, JobGroupRow } from "models/jobsTableModels"
 import {
   convertRowPartsToFilters,
   fetchJobGroups,
@@ -47,8 +47,7 @@ import { getSelectedColumnDef } from "./SelectedColumn"
 import { useStateWithPrevious } from "hooks/useStateWithPrevious"
 import _ from "lodash"
 import { JobId } from "model"
-import { Box } from "@mui/system"
-import styles from "./JobsTable.module.css";
+import styles from "./JobsTable.module.css"
 
 const DEFAULT_PAGE_SIZE = 30
 
@@ -83,11 +82,11 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
 
   const [pagination, setPagination, prevPagination] = useStateWithPrevious<PaginationState>({
     pageIndex: 0,
-    pageSize: DEFAULT_PAGE_SIZE
+    pageSize: DEFAULT_PAGE_SIZE,
   })
   const [pageCount, setPageCount] = useState<number>(-1)
   const { pageIndex, pageSize } = useMemo(() => pagination, [pagination])
-  const [subRowToLoadMore, setSubRowToLoadMore] = useState<{ rowId: RowId, skip: number } | undefined>(undefined)
+  const [subRowToLoadMore, setSubRowToLoadMore] = useState<{ rowId: RowId; skip: number } | undefined>(undefined)
 
   const [hoveredHeaderColumn, setHoveredHeaderColumn] = useState<ColumnId | undefined>(undefined)
 
@@ -97,32 +96,35 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       const groupingUnchanged = _.isEqual(grouping, prevGrouping)
       const expandedUnchanged = _.isEqual(expanded, prevExpanded)
       const paginationUnchanged = _.isEqual(pagination, prevPagination)
-      const loadMoreUnchanged = subRowToLoadMore === undefined;
+      const noSubRowToLoadMore = subRowToLoadMore === undefined
 
       // Relying purely on useEffect's dependencies array doesn't work perfectly (e.g. for hot reloads)
-      if (groupingUnchanged && expandedUnchanged && paginationUnchanged && loadMoreUnchanged) {
+      if (groupingUnchanged && expandedUnchanged && paginationUnchanged && noSubRowToLoadMore) {
         console.log("Not fetching any data as no relevant state has changed")
         return
       }
 
-      if (groupingUnchanged && paginationUnchanged && loadMoreUnchanged && newlyUnexpanded.length > 0) {
+      if (groupingUnchanged && paginationUnchanged && noSubRowToLoadMore && newlyUnexpanded.length > 0) {
         console.log("Not fetching new data since we're only unexpanding")
         return
       }
 
-      const rowsNeedingSubRowsFetched = [subRowToLoadMore?.rowId, ...newlyExpanded].filter((r): r is RowId => r !== undefined);
+      const rowsNeedingSubRowsFetched = [subRowToLoadMore?.rowId, ...newlyExpanded].filter(
+        (r): r is RowId => r !== undefined,
+      )
       if (rowsNeedingSubRowsFetched.length > 1) {
         console.warn("More than one row needing subrows fetched! This may be a bug.", { newlyExpanded })
       }
 
-      const rowToLoadSubRowsFor = rowsNeedingSubRowsFetched.length > 0 ? fromRowId(rowsNeedingSubRowsFetched[0]) : undefined
+      const rowToLoadSubRowsFor =
+        rowsNeedingSubRowsFetched.length > 0 ? fromRowId(rowsNeedingSubRowsFetched[0]) : undefined
 
       const groupingLevel = grouping.length
       const expandedLevel = rowToLoadSubRowsFor ? rowToLoadSubRowsFor.rowIdPathFromRoot.length : 0
 
       console.log({ rowsNeedingSubRowsFetched, groupingLevel, expandedLevel })
 
-      const skip = !rowToLoadSubRowsFor ? pageIndex * pageSize : (subRowToLoadMore ? subRowToLoadMore.skip : 0);
+      const skip = !rowToLoadSubRowsFor ? pageIndex * pageSize : subRowToLoadMore ? subRowToLoadMore.skip : 0
 
       const rowRequest = {
         filters: convertRowPartsToFilters(rowToLoadSubRowsFor?.rowIdPartsPath ?? []),
@@ -143,18 +145,26 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
         totalCount = totalGroups
       }
 
-      const { rootData, parentRow } = mergeSubRows(data, newData, rowToLoadSubRowsFor?.rowIdPathFromRoot ?? [], !!subRowToLoadMore)
+      const { rootData, parentRow } = mergeSubRows<JobRow, JobGroupRow>(
+        data,
+        newData,
+        rowToLoadSubRowsFor?.rowIdPathFromRoot ?? [],
+        !!subRowToLoadMore,
+      )
 
       if (parentRow) {
         parentRow.subRowCount = totalCount
 
         // Update any new children of selected rows
         if (parentRow.rowId in selectedRows) {
-          const newSelectedRows = (parentRow.subRows ?? []).reduce((newSelectedSubRows, subRow) => {
-            newSelectedSubRows[subRow.rowId] = true;
-            return newSelectedSubRows
-          }, { ...selectedRows });
-          setSelectedRows(newSelectedRows);
+          const newSelectedRows = parentRow.subRows.reduce(
+            (newSelectedSubRows, subRow) => {
+              newSelectedSubRows[subRow.rowId] = true
+              return newSelectedSubRows
+            },
+            { ...selectedRows },
+          )
+          setSelectedRows(newSelectedRows)
         }
       }
 
@@ -201,9 +211,12 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     [pagination, setPagination, setSelectedRows, setExpanded],
   )
 
-  const onLoadMoreSubRows = useCallback((rowId: RowId, skip: number) => {
-    setSubRowToLoadMore({ rowId, skip })
-  }, [setSubRowToLoadMore])
+  const onLoadMoreSubRows = useCallback(
+    (rowId: RowId, skip: number) => {
+      setSubRowToLoadMore({ rowId, skip })
+    },
+    [setSubRowToLoadMore],
+  )
 
   const onExpandedChange = useCallback(
     (updater: Updater<ExpandedState>) => {
@@ -217,13 +230,13 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     [setExpanded, expanded],
   )
 
-  const onSelectedRowChange = useCallback((updater: Updater<RowSelectionState>) => {
-    const newSelectedRows = updaterToValue(updater, selectedRows)
-    const [addedRowIds, removedRowIds] = diffOfKeys<RowId>(newSelectedRows, selectedRows)
-    console.log({ addedRowIds, removedRowIds });
-
-    setSelectedRows(newSelectedRows)
-  }, [setSelectedRows, selectedRows])
+  const onSelectedRowChange = useCallback(
+    (updater: Updater<RowSelectionState>) => {
+      const newSelectedRows = updaterToValue(updater, selectedRows)
+      setSelectedRows(newSelectedRows)
+    },
+    [setSelectedRows, selectedRows],
+  )
 
   const tableState = useMemo(
     () => ({
@@ -289,7 +302,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     getFilteredRowModel: getFilteredRowModel(),
   })
 
-  const topLevelRows = table.getRowModel().rows.filter(row => row.depth === 0);
+  const topLevelRows = table.getRowModel().rows.filter((row) => row.depth === 0)
   return (
     <>
       <JobsTableActionBar
@@ -316,7 +329,12 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
             ))}
           </TableHead>
 
-          <JobsTableBody dataIsLoading={isLoading} columns={selectedColumnDefs} topLevelRows={topLevelRows} onLoadMoreSubRows={onLoadMoreSubRows} />
+          <JobsTableBody
+            dataIsLoading={isLoading}
+            columns={selectedColumnDefs}
+            topLevelRows={topLevelRows}
+            onLoadMoreSubRows={onLoadMoreSubRows}
+          />
 
           <TableFooter>
             <TableRow>
@@ -362,20 +380,25 @@ const JobsTableBody = ({ dataIsLoading, columns, topLevelRows, onLoadMoreSubRows
         </TableRow>
       )}
 
-      {topLevelRows.map(row => recursiveRowRender(row, onLoadMoreSubRows))}
+      {topLevelRows.map((row) => recursiveRowRender(row, onLoadMoreSubRows))}
     </TableBody>
   )
 }
 
-const recursiveRowRender = (row: Row<JobTableRow>, onLoadMoreSubRows: (rowId: RowId, skip: number) => void): JSX.Element => {
+const recursiveRowRender = (
+  row: Row<JobTableRow>,
+  onLoadMoreSubRows: (rowId: RowId, skip: number) => void,
+): JSX.Element => {
   const original = row.original
   const rowIsGroup = isJobGroupRow(original)
-  const rowCells = row.getVisibleCells();
+  const rowCells = row.getVisibleCells()
+
+  const depthGaugeLevelThicknessPixels = 6
 
   return (
     <React.Fragment key={`${row.id}_d${row.depth}`}>
       {/* Render the current row */}
-      <TableRow aria-label={row.id} hover className={styles.depthIndicator} sx={{ backgroundSize: row.depth * 6 }}>
+      <TableRow aria-label={row.id} hover className={styles.rowDepthIndicator} sx={{ backgroundSize: row.depth * 6 }}>
         {rowCells.map((cell) => (
           <BodyCell
             cell={cell}
@@ -389,18 +412,25 @@ const recursiveRowRender = (row: Row<JobTableRow>, onLoadMoreSubRows: (rowId: Ro
       </TableRow>
 
       {/* Render any sub rows if expanded */}
-      {rowIsGroup && row.getIsExpanded() && row.subRows.map(row => recursiveRowRender(row, onLoadMoreSubRows))}
+      {rowIsGroup && row.getIsExpanded() && row.subRows.map((row) => recursiveRowRender(row, onLoadMoreSubRows))}
 
       {/* Render pagination tools for this expanded row */}
-      {rowIsGroup && row.getIsExpanded() && (original.subRowCount ?? 0) > (original.subRows?.length ?? 0) &&
-        <TableRow className={styles.depthIndicator} sx={{ backgroundSize: (row.depth + 1) * 6, backgroundColor: "rgba(224, 224, 224, 0.35)" }}>
+      {rowIsGroup && row.getIsExpanded() && (original.subRowCount ?? 0) > original.subRows.length && (
+        <TableRow
+          className={[styles.rowDepthIndicator, styles.loadMoreRow].join(" ")}
+          sx={{ backgroundSize: (row.depth + 1) * depthGaugeLevelThicknessPixels }}
+        >
           <TableCell colSpan={row.getVisibleCells().length} align="center" size="small">
-            <Button size="small" variant="text" onClick={() => onLoadMoreSubRows(row.id as RowId, original.subRows?.length ?? 0)}>
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => onLoadMoreSubRows(row.id as RowId, original.subRows.length)}
+            >
               Load more
             </Button>
           </TableCell>
         </TableRow>
-      }
+      )}
     </React.Fragment>
   )
 }

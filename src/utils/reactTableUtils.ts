@@ -1,8 +1,5 @@
 // E.g. "job:1", or "queue:queue-2"
 // Format comes from ReactTable grouping, see https://github.com/TanStack/table/blob/main/packages/table-core/src/utils/getGroupedRowModel.ts#L59
-
-import { isJobGroupRow, JobGroupRow, JobTableRow } from "models/jobsTableModels"
-
 // It's convenient to just use this same format everywhere
 export type RowIdSegment = `${string}:${string}`
 
@@ -52,32 +49,59 @@ export const fromRowId = (rowId: RowId): RowIdInfo => {
   }
 }
 
-export interface RowWithOptionalSubRows {
+export interface NonGroupedRow {
   rowId: RowId
-  subRows?: RowWithOptionalSubRows[]
 }
+export interface GroupedRow<
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+> {
+  rowId: RowId
+  subRows: (TNonGroupedRow | TGroupedRow)[]
+}
+const isGroupedRow = <
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+>(
+  row?: TGroupedRow | TNonGroupedRow,
+): row is TGroupedRow => row !== undefined && "subRows" in row
 
+interface MergeSubRowsResult<
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+> {
+  rootData: (TNonGroupedRow | TGroupedRow)[]
+  parentRow?: TGroupedRow
+}
 /**
  * Merges new rows (which may or may not be subrows) with existing data.
  */
-export const mergeSubRows = (existingData: JobTableRow[], newSubRows: JobTableRow[], locationForSubRows: RowId[], appendSubRows: boolean) => {
+export const mergeSubRows = <
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+>(
+  existingData: (TNonGroupedRow | TGroupedRow)[],
+  newSubRows: (TNonGroupedRow | TGroupedRow)[],
+  locationForSubRows: RowId[],
+  appendSubRows: boolean,
+): MergeSubRowsResult<TNonGroupedRow, TGroupedRow> => {
   // Just return if this is the top-level data
   if (locationForSubRows.length === 0) {
     return { rootData: newSubRows }
   }
 
   // Otherwise merge it into existing data
-  const rowToModify: JobGroupRow | undefined = locationForSubRows.reduce<JobGroupRow | undefined>(
+  const rowToModify = locationForSubRows.reduce<TGroupedRow | undefined>(
     (row, rowIdToFind) => {
-      if (isJobGroupRow(row)) {
-        const candidateRow: JobTableRow | undefined = row.subRows?.find((r) => r.rowId === rowIdToFind)
-        if (isJobGroupRow(candidateRow)) {
+      if (isGroupedRow(row)) {
+        const candidateRow = row.subRows.find((r) => r.rowId === rowIdToFind)
+        if (isGroupedRow(candidateRow)) {
           return candidateRow
         }
       }
       // TODO: Change subRows to a set to optimise this lookup
     },
-    { isGroup: true, subRows: existingData } as JobGroupRow,
+    { subRows: existingData } as TGroupedRow,
   )
 
   // Modifies in-place for now
@@ -85,9 +109,8 @@ export const mergeSubRows = (existingData: JobTableRow[], newSubRows: JobTableRo
     if (appendSubRows) {
       rowToModify.subRows = (rowToModify.subRows ?? []).concat(newSubRows)
     } else {
-      rowToModify.subRows = newSubRows;
+      rowToModify.subRows = newSubRows
     }
-    
   } else {
     console.warn("Could not find row to merge with path. This is a bug.", locationForSubRows)
   }
