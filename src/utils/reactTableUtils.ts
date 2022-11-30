@@ -94,12 +94,12 @@ export const mergeSubRows = <
   const rowToModify = locationForSubRows.reduce<TGroupedRow | undefined>(
     (row, rowIdToFind) => {
       if (isGroupedRow(row)) {
+        // TODO: Change subRows to a set to optimise this lookup
         const candidateRow = row.subRows.find((r) => r.rowId === rowIdToFind)
         if (isGroupedRow(candidateRow)) {
           return candidateRow
         }
       }
-      // TODO: Change subRows to a set to optimise this lookup
     },
     { subRows: existingData } as TGroupedRow,
   )
