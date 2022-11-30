@@ -122,8 +122,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       const groupingLevel = grouping.length
       const expandedLevel = rowToLoadSubRowsFor ? rowToLoadSubRowsFor.rowIdPathFromRoot.length : 0
 
-      console.log({ rowsNeedingSubRowsFetched, groupingLevel, expandedLevel })
-
       const skip = !rowToLoadSubRowsFor ? pageIndex * pageSize : subRowToLoadMore ? subRowToLoadMore.skip : 0
 
       const rowRequest = {
