@@ -40,10 +40,10 @@ import {
   diffOfKeys,
   updaterToValue,
 } from "utils/jobsTableUtils"
-import { ColumnId, columnSpecFor, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
+import { ColumnId, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
 import { JobsTableActionBar } from "./JobsTableActionBar"
-import { getSelectedColumnDef } from "./SelectedColumn"
+import { getSelectedColumnDef, SELECT_COLUMN_ID } from "./SelectedColumn"
 import { useStateWithPrevious } from "hooks/useStateWithPrevious"
 import _ from "lodash"
 import { JobId } from "model"
@@ -236,42 +236,36 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     [setSelectedRows, selectedRows],
   )
 
-  const tableState = useMemo(
-    () => ({
-      grouping,
-      expanded,
-      pagination,
-      rowSelection: selectedRows,
-    }),
-    [grouping, expanded, pagination, selectedRows],
-  )
-
-  // TODO: Refactor and use Tanstack column pinning?
   const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(() => {
-    const fixedStartColumns = [getSelectedColumnDef()]
-    const restOfColumns = [
-      ...grouping.map(columnSpecFor),
-      ...allColumns.filter((c) => c.selected && !grouping.includes(c.key)),
-    ].map(
-      (c): ColumnDef<JobTableRow> => ({
-        id: c.key,
-        accessorKey: c.key,
-        header: c.name,
-        enableGrouping: c.groupable,
-        aggregationFn: () => "-",
-        minSize: c.minSize,
-        size: c.minSize,
-        ...(c.formatter ? { cell: (info) => c.formatter?.(info.getValue()) } : {}),
-      }),
-    )
-
-    return [...fixedStartColumns, ...restOfColumns]
-  }, [allColumns, grouping])
+    return allColumns
+      .filter((c) => c.selected)
+      .map(
+        (c): ColumnDef<JobTableRow> => ({
+          id: c.key,
+          accessorKey: c.key,
+          header: c.name,
+          enableGrouping: c.groupable,
+          aggregationFn: () => "-",
+          minSize: c.minSize,
+          size: c.minSize,
+          ...(c.formatter ? { cell: (info) => c.formatter?.(info.getValue()) } : {}),
+        }),
+      )
+      .concat([getSelectedColumnDef()])
+  }, [allColumns])
 
   const table = useReactTable({
     data: data ?? [],
     columns: selectedColumnDefs,
-    state: tableState,
+    state: {
+      grouping,
+      expanded,
+      pagination,
+      rowSelection: selectedRows,
+      columnPinning: {
+        left: [SELECT_COLUMN_ID],
+      },
+    },
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,
     getSubRows: (row) => (isJobGroupRow(row) && row.subRows) || undefined,
@@ -289,7 +283,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     onExpandedChange: onExpandedChange,
     autoResetExpanded: false,
     manualExpanding: false,
-    groupedColumnMode: false, // Retain manual control over column ordering
 
     // Pagination
     manualPagination: true,
