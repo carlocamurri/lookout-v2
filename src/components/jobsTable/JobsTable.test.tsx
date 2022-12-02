@@ -21,7 +21,7 @@ describe("JobsTable", () => {
   })
 
   const renderComponent = () =>
-    render(<JobsTable getJobsService={getJobsService} groupJobsService={groupJobsService} />)
+    render(<JobsTable getJobsService={getJobsService} groupJobsService={groupJobsService} debug={false} />)
 
   it("should render a spinner while loading initially", async () => {
     getJobsService.getJobs = jest.fn(() => new Promise(() => undefined))

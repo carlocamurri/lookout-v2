@@ -1,14 +1,14 @@
-import { convertExpandedRowFieldsToFilters, diffOfKeys } from "./jobsTableUtils"
+import { convertRowPartsToFilters, diffOfKeys } from "./jobsTableUtils"
 
 describe("JobsTableUtils", () => {
-  describe("convertExpandedRowFieldsToFilters", () => {
+  describe("convertRowPartsToFilters", () => {
     it("returns empty if not expanding a row", () => {
-      const result = convertExpandedRowFieldsToFilters([])
+      const result = convertRowPartsToFilters([])
       expect(result).toStrictEqual([])
     })
 
     it("returns one filter when expanding a top level row", () => {
-      const result = convertExpandedRowFieldsToFilters([{ type: "queue", value: "queue-2" }])
+      const result = convertRowPartsToFilters([{ type: "queue", value: "queue-2" }])
       expect(result).toStrictEqual([
         {
           field: "queue",
@@ -19,7 +19,7 @@ describe("JobsTableUtils", () => {
     })
 
     it("returns multiple filters when expanding a nested row", () => {
-      const result = convertExpandedRowFieldsToFilters([
+      const result = convertRowPartsToFilters([
         { type: "jobSet", value: "job-set-2" },
         {
           type: "queue",

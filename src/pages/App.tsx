@@ -46,6 +46,9 @@ const theme = createTheme({
 const NAVBAR_HEIGHT = 64
 
 function App() {
+  const queryParams = new URLSearchParams(window.location.search)
+  const isDebugEnabled = queryParams.has("debug")
+
   const [dims, setDims] = useState({ width: 0, height: 0 })
 
   const ref = useRef<HTMLDivElement>(null)
@@ -84,6 +87,7 @@ function App() {
                   width={dims.width}
                   getJobsService={new FakeGetJobsService(testJobs)}
                   groupJobsService={new FakeGroupJobsService(testJobs)}
+                  debug={isDebugEnabled}
                 />
               }
             />

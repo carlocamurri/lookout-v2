@@ -49,42 +49,71 @@ export const fromRowId = (rowId: RowId): RowIdInfo => {
   }
 }
 
-export interface RowWithOptionalSubRows {
+export interface NonGroupedRow {
   rowId: RowId
-  subRows?: RowWithOptionalSubRows[]
 }
+export interface GroupedRow<
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+> {
+  rowId: RowId
+  subRows: (TNonGroupedRow | TGroupedRow)[]
+}
+const isGroupedRow = <
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+>(
+  row?: TGroupedRow | TNonGroupedRow,
+): row is TGroupedRow => row !== undefined && "subRows" in row
 
+interface MergeSubRowsResult<
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+> {
+  rootData: (TNonGroupedRow | TGroupedRow)[]
+  parentRow?: TGroupedRow
+}
 /**
  * Merges new rows (which may or may not be subrows) with existing data.
  */
-export const mergeSubRows = (
-  existingData: RowWithOptionalSubRows[],
-  newSubRows: RowWithOptionalSubRows[],
+export const mergeSubRows = <
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+>(
+  existingData: (TNonGroupedRow | TGroupedRow)[],
+  newSubRows: (TNonGroupedRow | TGroupedRow)[],
   locationForSubRows: RowId[],
-): RowWithOptionalSubRows[] => {
+  appendSubRows: boolean,
+): MergeSubRowsResult<TNonGroupedRow, TGroupedRow> => {
   // Just return if this is the top-level data
   if (locationForSubRows.length === 0) {
-    return newSubRows
+    return { rootData: newSubRows }
   }
 
   // Otherwise merge it into existing data
-  const rowToModify = locationForSubRows.reduce<RowWithOptionalSubRows | undefined>(
+  const rowToModify = locationForSubRows.reduce<TGroupedRow | undefined>(
     (row, rowIdToFind) => {
-      // TODO: Change subRows to a set to optimise this lookup
-      const candidateRow = row?.subRows?.find((r) => r.rowId === rowIdToFind)
-      if (candidateRow && candidateRow.subRows !== undefined) {
-        return candidateRow
+      if (isGroupedRow(row)) {
+        // TODO: Change subRows to a set to optimise this lookup
+        const candidateRow = row.subRows.find((r) => r.rowId === rowIdToFind)
+        if (isGroupedRow(candidateRow)) {
+          return candidateRow
+        }
       }
     },
-    { subRows: existingData } as RowWithOptionalSubRows,
+    { subRows: existingData } as TGroupedRow,
   )
 
   // Modifies in-place for now
   if (rowToModify) {
-    rowToModify.subRows = newSubRows
+    if (appendSubRows) {
+      rowToModify.subRows = (rowToModify.subRows ?? []).concat(newSubRows)
+    } else {
+      rowToModify.subRows = newSubRows
+    }
   } else {
     console.warn("Could not find row to merge with path. This is a bug.", locationForSubRows)
   }
 
-  return existingData
+  return { rootData: existingData, parentRow: rowToModify }
 }
