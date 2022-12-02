@@ -236,6 +236,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     [setSelectedRows, selectedRows],
   )
 
+  // TODO: Refactor and use Tanstack column pinning?
   const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(() => {
     return allColumns
       .filter((c) => c.selected)
