@@ -63,7 +63,15 @@ export type JobRun = {
   exitCode?: number
 }
 
-export type Match = "exact" | "startsWith" | "greater" | "less" | "greaterOrEqual" | "lessOrEqual"
+export enum Match {
+  Exact = "exact",
+  StartsWith = "startsWith",
+  GreaterThan = "greater",
+  LessThan = "less",
+  GreaterThanOrEqual = "greaterOrEqual",
+  LessThanOrEqual = "lessOrEqual",
+  AnyOf = "anyOf",
+}
 
 export type JobFilter = {
   field: string

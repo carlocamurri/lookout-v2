@@ -1,16 +1,25 @@
 import { capitalize } from "lodash"
-import { Job } from "model"
+import { Job, JobStates } from "model"
 
 export type ColumnId = keyof Job | "selectorCol"
+
+// TODO: Remove ColumnSpec indrection and just use Tanstack's ColumnDef?
 export type ColumnSpec = {
   key: ColumnId
   name: string
   selected: boolean
   isAnnotation: boolean
   groupable: boolean
+  filterType?: FilterType
+  enumFitlerValues?: string[]
   minSize: number
   isNumeric?: boolean
   formatter?: (value: unknown) => string
+}
+
+export enum FilterType {
+  Text = "Text",
+  Enum = "Enum",
 }
 
 const getDefaultColumnSpec = (colId: ColumnId): ColumnSpec => ({
@@ -25,10 +34,43 @@ const getDefaultColumnSpec = (colId: ColumnId): ColumnSpec => ({
 const numFormatter = Intl.NumberFormat()
 
 const COLUMN_SPECS: ColumnSpec[] = [
-  { key: "jobId", name: "Job Id", selected: true, isAnnotation: false, groupable: false, minSize: 30 },
-  { key: "jobSet", name: "Job Set", selected: true, isAnnotation: false, groupable: true, minSize: 100 },
-  { key: "queue", name: "Queue", selected: true, isAnnotation: false, groupable: true, minSize: 95 },
-  { key: "state", name: "State", selected: true, isAnnotation: false, groupable: true, minSize: 60 },
+  {
+    key: "jobId",
+    name: "Job Id",
+    selected: true,
+    isAnnotation: false,
+    groupable: false,
+    filterType: FilterType.Text,
+    minSize: 30,
+  },
+  {
+    key: "jobSet",
+    name: "Job Set",
+    selected: true,
+    isAnnotation: false,
+    groupable: true,
+    filterType: FilterType.Text,
+    minSize: 100,
+  },
+  {
+    key: "queue",
+    name: "Queue",
+    selected: true,
+    isAnnotation: false,
+    groupable: true,
+    filterType: FilterType.Text,
+    minSize: 95,
+  },
+  {
+    key: "state",
+    name: "State",
+    selected: true,
+    isAnnotation: false,
+    groupable: true,
+    filterType: FilterType.Enum,
+    enumFitlerValues: Object.values(JobStates).map((s) => s.name),
+    minSize: 60,
+  },
   {
     key: "cpu",
     name: "CPU",

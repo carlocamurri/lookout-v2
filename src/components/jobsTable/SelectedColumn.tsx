@@ -8,13 +8,14 @@ const Checkbox = memo(MuiCheckbox)
 
 export const SELECT_COLUMN_ID: ColumnId = "selectorCol"
 export const getSelectedColumnDef = (): ColumnDef<JobTableRow> => {
-  const fixedWidthPixels = 50
+  const fixedWidthPixels = 35
   return {
     id: SELECT_COLUMN_ID as ColumnId,
     minSize: fixedWidthPixels,
     size: fixedWidthPixels,
     maxSize: fixedWidthPixels,
     aggregatedCell: undefined,
+    enableColumnFilter: false,
     header: ({ table }) => {
       return (
         <Checkbox
@@ -34,7 +35,7 @@ export const getSelectedColumnDef = (): ColumnDef<JobTableRow> => {
           size="small"
           sx={useMemo(
             () => ({
-              marginLeft: `${row.depth}em`,
+              marginLeft: `${row.depth * 6}px`,
             }),
             [],
           )}

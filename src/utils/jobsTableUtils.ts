@@ -1,6 +1,6 @@
-import { Updater } from "@tanstack/react-table"
+import { ColumnFiltersState, Updater } from "@tanstack/react-table"
 import _ from "lodash"
-import { Job, JobFilter, JobGroup, JobOrder } from "model"
+import { Job, JobFilter, JobGroup, JobOrder, Match } from "model"
 import { JobRow, JobGroupRow } from "models/jobsTableModels"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
@@ -10,10 +10,21 @@ export const convertRowPartsToFilters = (expandedRowIdParts: RowIdParts[]): JobF
   const filters: JobFilter[] = expandedRowIdParts.map(({ type, value }) => ({
     field: type,
     value,
-    match: "exact",
+    match: Match.Exact,
   }))
 
   return filters
+}
+
+export const convertColumnFiltersToFilters = (filters: ColumnFiltersState): JobFilter[] => {
+  return filters.map(({ id, value }) => {
+    const isArray = _.isArray(value)
+    return {
+      field: id,
+      value: isArray ? (value as string[]) : (value as string),
+      match: isArray ? Match.AnyOf : Match.Exact,
+    }
+  })
 }
 
 export interface FetchRowRequest {

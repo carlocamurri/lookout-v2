@@ -136,6 +136,8 @@ export function getMatch(match: Match): (a: any, b: any) => boolean {
       return (a, b) => a >= b
     case "lessOrEqual":
       return (a, b) => a <= b
+    case "anyOf":
+      return (a, b) => b.includes(a)
     default:
       console.error(`Unknown match: ${match}`)
       return () => false

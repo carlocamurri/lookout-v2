@@ -1,4 +1,4 @@
-import { Job, JobFilter, JobGroup, JobOrder } from "model"
+import { Job, JobFilter, JobGroup, JobOrder, Match } from "model"
 
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
@@ -227,7 +227,7 @@ export class GroupTree implements Tree {
     return groupValues.map((val, index) => ({
       field: this.groupedFields[index],
       value: val,
-      match: "exact",
+      match: Match.Exact,
     }))
   }
 }
