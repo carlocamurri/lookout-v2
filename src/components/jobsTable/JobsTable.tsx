@@ -30,7 +30,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
-import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
+import { findRowInData, fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
 import { JobTableRow, isJobGroupRow, JobRow, JobGroupRow } from "models/jobsTableModels"
 import {
   convertRowPartsToFilters,
@@ -55,7 +55,8 @@ const DEFAULT_PAGE_SIZE = 30
 
 interface PendingData {
   parentRowId: RowId | "ROOT"
-  skip?: number
+  skip: number
+  take?: number
   append?: boolean
 }
 
@@ -110,7 +111,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       if (rowsToFetch.length === 0) {
         return
       }
-      
+
       const [nextRequest, ...restOfRequests] = rowsToFetch
 
       const parentRowInfo = nextRequest.parentRowId !== "ROOT" ? fromRowId(nextRequest.parentRowId) : undefined
@@ -119,7 +120,6 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       const expandedLevel = parentRowInfo ? parentRowInfo.rowIdPathFromRoot.length : 0
       const isJobFetch = expandedLevel === groupingLevel
 
-      const skip = !parentRowInfo ? pageIndex * pageSize : nextRequest.skip ?? 0
       const sortedField = sorting[0]
 
       const rowRequest: FetchRowRequest = {
@@ -127,8 +127,8 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
           ...convertRowPartsToFilters(parentRowInfo?.rowIdPartsPath ?? []),
           ...convertColumnFiltersToFilters(columnFilterState),
         ],
-        skip,
-        take: pageSize,
+        skip: nextRequest.skip ?? 0,
+        take: nextRequest.take ?? pageSize,
         order: { field: sortedField.id, direction: sortedField.desc ? "DESC" : "ASC" },
       }
 
@@ -148,7 +148,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       const { rootData, parentRow } = mergeSubRows<JobRow, JobGroupRow>(
         data,
         newData,
-        parentRowInfo?.rowIdPathFromRoot ?? [],
+        parentRowInfo?.rowId,
         Boolean(nextRequest.append),
       )
 
@@ -197,7 +197,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       setGrouping([...newState])
 
       // Refetch the root data
-      setRowsToFetch([{ parentRowId: "ROOT" }])
+      setRowsToFetch([{ parentRowId: "ROOT", skip: 0 }])
     },
     [allColumns],
   )
@@ -212,9 +212,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       setPagination(newPagination)
 
       // Refetch the root data
-      setRowsToFetch([{ parentRowId: "ROOT" }])
+      setRowsToFetch([{ parentRowId: "ROOT", skip: newPagination.pageIndex * pageSize }])
     },
-    [pagination],
+    [pagination, pageSize],
   )
 
   const onLoadMoreSubRows = useCallback((rowId: RowId, skip: number) => {
@@ -232,7 +232,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       setExpanded(newExpandedState)
 
       // Fetch subrows for expanded rows
-      setRowsToFetch(newlyExpanded.map((rowId) => ({ parentRowId: rowId, append: false })))
+      setRowsToFetch(newlyExpanded.map((rowId) => ({ parentRowId: rowId, skip: 0 })))
     },
     [expanded],
   )
@@ -249,7 +249,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     (updater: Updater<ColumnFiltersState>) => {
       const newFilterState = updaterToValue(updater, columnFilterState)
       setColumnFilterState(newFilterState)
-      setRowsToFetch([{ parentRowId: "ROOT" }])
+      setRowsToFetch([{ parentRowId: "ROOT", skip: 0 }])
     },
     [columnFilterState],
   )
@@ -260,13 +260,23 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       setSorting(newSortingState)
 
       // Refetch any expanded subgroups, and root data with updated sorting params
-      const expandedGroups: PendingData[] = Object.keys(expanded).map((rowId) => ({
-        parentRowId: rowId as RowId,
-        skip: 0,
-      }))
-      setRowsToFetch([{ parentRowId: "ROOT" as RowId | "ROOT" }].concat(expandedGroups))
+      const expandedGroups: PendingData[] = Object.keys(expanded).map((rowId) => {
+        const parentRow = findRowInData(data, rowId as RowId)
+        return {
+          parentRowId: rowId as RowId,
+          // Retain the same number of rows that are currently shown
+          // Since these are currently all retreived in one request, they could be slower
+          // if there is a lot of expanded rows
+          take: parentRow?.subRows.length ?? pageSize,
+          skip: 0,
+        }
+      })
+
+      setRowsToFetch(
+        [{ parentRowId: "ROOT" as RowId | "ROOT", skip: pagination.pageIndex * pageSize }].concat(expandedGroups),
+      )
     },
-    [sorting, expanded],
+    [sorting, expanded, pagination, pageSize, data],
   )
 
   const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(() => {
