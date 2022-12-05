@@ -45,6 +45,7 @@ export const HeaderCell = ({ header }: HeaderCellProps) => {
           }}
           hideSortIcon={!header.column.getCanSort()}
           aria-label={"Toggle sort"}
+          disabled={!header.column.getCanSort()}
         >
           {flexRender(header.column.columnDef.header, header.getContext())}
           {header.column.getIsGrouped() && <> (# Jobs)</>}

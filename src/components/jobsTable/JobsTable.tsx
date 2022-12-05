@@ -289,6 +289,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
           header: c.name,
           enableGrouping: c.groupable,
           enableColumnFilter: c.filterType !== undefined,
+          enableSorting: c.sortable,
           aggregationFn: () => "-",
           minSize: c.minSize,
           size: c.minSize,

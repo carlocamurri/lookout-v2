@@ -10,12 +10,13 @@ import { JobsTable } from "./JobsTable"
 import { DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 describe("JobsTable", () => {
-  const numQueues = 2,
+  let numJobs = 5,
+    numQueues = 2,
     numJobSets = 3
   let jobs: Job[], getJobsService: GetJobsService, groupJobsService: GroupJobsService
 
   beforeEach(() => {
-    jobs = makeTestJobs(5, 1, numQueues, numJobSets)
+    jobs = makeTestJobs(numJobs, 1, numQueues, numJobSets)
     getJobsService = new FakeGetJobsService(jobs)
     groupJobsService = new FakeGroupJobsService(jobs)
   })
@@ -231,52 +232,54 @@ describe("JobsTable", () => {
     const { getAllByRole, getByRole } = renderComponent()
     await waitForElementToBeRemoved(() => getByRole("progressbar"))
 
-    await toggleSorting("Queue")
+    await toggleSorting("Job Id")
 
     await waitFor(() => {
       const rows = getAllByRole("row")
       // Skipping header and footer rows
-      expect(rows[1]).toHaveTextContent("queue-1")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
+      expect(rows[1]).toHaveTextContent("1") // Job ID
+      expect(rows[rows.length - 2]).toHaveTextContent((numJobs - 1).toString())
     })
 
-    await toggleSorting("Queue")
+    await toggleSorting("Job Id")
 
     await waitFor(() => {
       const rows = getAllByRole("row")
 
       // Order should be reversed now
-      expect(rows[1]).toHaveTextContent("queue-2")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
+      expect(rows[1]).toHaveTextContent((numJobs - 1).toString())
+      console.log(rows[1].textContent)
+      expect(rows[rows.length - 2]).toHaveTextContent("1") // Job ID
     })
   })
 
-  it("should allow sorting groups", async () => {
-    const { getAllByRole, getByRole } = renderComponent()
-    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+  // Commented out until sorting by group name is supported
+  // it("should allow sorting groups", async () => {
+  //   const { getAllByRole, getByRole } = renderComponent()
+  //   await waitForElementToBeRemoved(() => getByRole("progressbar"))
 
-    await groupByColumn("Queue")
-    await assertNumDataRowsShown(numQueues)
+  //   await groupByColumn("Queue")
+  //   await assertNumDataRowsShown(numQueues)
 
-    await toggleSorting("Queue")
+  //   await toggleSorting("Queue")
 
-    await waitFor(() => {
-      const rows = getAllByRole("row")
-      // Skipping header and footer rows
-      expect(rows[1]).toHaveTextContent("queue-1")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
-    })
+  //   await waitFor(() => {
+  //     const rows = getAllByRole("row")
+  //     // Skipping header and footer rows
+  //     expect(rows[1]).toHaveTextContent("queue-1")
+  //     expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
+  //   })
 
-    await toggleSorting("Queue")
+  //   await toggleSorting("Queue")
 
-    await waitFor(() => {
-      const rows = getAllByRole("row")
+  //   await waitFor(() => {
+  //     const rows = getAllByRole("row")
 
-      // Order should be reversed now
-      expect(rows[1]).toHaveTextContent("queue-2")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
-    })
-  })
+  //     // Order should be reversed now
+  //     expect(rows[1]).toHaveTextContent("queue-2")
+  //     expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
+  //   })
+  // })
 
   async function assertNumDataRowsShown(nDataRows: number) {
     await waitFor(async () => {
