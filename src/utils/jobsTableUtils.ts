@@ -31,11 +31,11 @@ export interface FetchRowRequest {
   filters: JobFilter[]
   skip: number
   take: number
+  order: JobOrder
 }
 export const fetchJobs = async (rowRequest: FetchRowRequest, getJobsService: GetJobsService) => {
-  const { filters, skip, take } = rowRequest
+  const { filters, skip, take, order } = rowRequest
 
-  const order: JobOrder = { field: "jobId", direction: "ASC" }
   return await getJobsService.getJobs(filters, order, skip, take, undefined)
 }
 
@@ -45,9 +45,17 @@ export const fetchJobGroups = async (
   groupedColumn: string,
   columnsToAggregate: string[],
 ) => {
+  console.log({ rowRequest })
   const { filters, skip, take } = rowRequest
+  let { order } = rowRequest
 
-  const order: JobOrder = { field: "name", direction: "ASC" }
+  // Always sort by the grouped field when fetching groups
+  // But only respect the direction if the UI is actually sorting by the grouped column
+  order = {
+    field: "name",
+    direction: order.field === groupedColumn ? order.direction : "ASC",
+  }
+
   return await groupJobsService.groupJobs(filters, order, groupedColumn, columnsToAggregate, skip, take, undefined)
 }
 

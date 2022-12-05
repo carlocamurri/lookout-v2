@@ -1,5 +1,5 @@
 import { KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
-import { TableCell, IconButton } from "@mui/material"
+import { TableCell, IconButton, TableSortLabel } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"
 import _ from "lodash"
 import { JobRow } from "models/jobsTableModels"
@@ -24,6 +24,7 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
   const id = header.id as ColumnId
   const colSpec = columnSpecFor(id)
   const isRightAligned = shouldRightAlign(colSpec)
+  const sortDirection = header.column.getIsSorted() || "asc"
 
   // To be used for sorting icons in future
   const _isHovered = id === hoveredColumn
@@ -41,10 +42,18 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
       aria-label={colSpec.name}
     >
       {header.isPlaceholder ? null : (
-        <>
+        <TableSortLabel
+          active={Boolean(header.column.getIsSorted())}
+          direction={sortDirection}
+          onClick={() => {
+            header.column.toggleSorting(sortDirection !== "desc")
+          }}
+          hideSortIcon={!header.column.getCanSort()}
+          aria-label={"Toggle sort"}
+        >
           {flexRender(header.column.columnDef.header, header.getContext())}
           {header.column.getIsGrouped() && <> (# Jobs)</>}
-        </>
+        </TableSortLabel>
       )}
 
       {header.column.getCanFilter() && colSpec.filterType && (

@@ -71,7 +71,7 @@ function comparator(order: JobOrder): (a: JobGroup, b: JobGroup) => number {
     const valueA = accessor(a)
     const valueB = accessor(b)
     if (valueA === undefined || valueB === undefined) {
-      console.error(`group accessor for field ${order.field} is undefined`)
+      console.error(`group accessor for field ${order.field} is undefined`, { a, b })
       return 0
     }
     return compareValues(valueA, valueB, order.direction)

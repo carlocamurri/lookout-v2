@@ -15,7 +15,7 @@ describe("JobsTable", () => {
   let jobs: Job[], getJobsService: GetJobsService, groupJobsService: GroupJobsService
 
   beforeEach(() => {
-    jobs = makeTestJobs(5, 1)
+    jobs = makeTestJobs(5, 1, numQueues, numJobSets)
     getJobsService = new FakeGetJobsService(jobs)
     groupJobsService = new FakeGroupJobsService(jobs)
   })
@@ -227,6 +227,57 @@ describe("JobsTable", () => {
     await assertNumDataRowsShown(jobs.length)
   })
 
+  it("should allow sorting jobs", async () => {
+    const { getAllByRole, getByRole } = renderComponent()
+    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+
+    await toggleSorting("Queue")
+
+    await waitFor(() => {
+      const rows = getAllByRole("row")
+      // Skipping header and footer rows
+      expect(rows[1]).toHaveTextContent("queue-2")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
+    })
+
+    await toggleSorting("Queue")
+
+    await waitFor(() => {
+      const rows = getAllByRole("row")
+
+      // Order should be reversed now
+      expect(rows[1]).toHaveTextContent("queue-1")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
+    })
+  })
+
+  it("should allow sorting groups", async () => {
+    const { getAllByRole, getByRole } = renderComponent()
+    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+
+    await groupByColumn("Queue")
+    await assertNumDataRowsShown(numQueues)
+
+    await toggleSorting("Queue")
+
+    await waitFor(() => {
+      const rows = getAllByRole("row")
+      // Skipping header and footer rows
+      expect(rows[1]).toHaveTextContent("queue-2")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
+    })
+
+    await toggleSorting("Queue")
+
+    await waitFor(() => {
+      const rows = getAllByRole("row")
+
+      // Order should be reversed now
+      expect(rows[1]).toHaveTextContent("queue-1")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
+    })
+  })
+
   async function assertNumDataRowsShown(nDataRows: number) {
     await waitFor(async () => {
       const rows = await screen.findAllByRole("row")
@@ -257,15 +308,19 @@ describe("JobsTable", () => {
     userEvent.click(checkbox)
   }
 
+  async function getHeaderCell(columnDisplayName: string) {
+    return await screen.findByRole("columnheader", { name: columnDisplayName })
+  }
+
   async function filterTextColumnTo(columnDisplayName: string, filterText: string) {
-    const headerCell = await screen.findByRole("columnheader", { name: columnDisplayName })
+    const headerCell = await getHeaderCell(columnDisplayName)
     const filterInput = await within(headerCell).findByRole("textbox", { name: "Filter" })
     userEvent.clear(filterInput)
     userEvent.type(filterInput, filterText)
   }
 
   async function toggleEnumFilterOption(columnDisplayName: string, filterOption: string) {
-    const headerCell = await screen.findByRole("columnheader", { name: columnDisplayName })
+    const headerCell = await getHeaderCell(columnDisplayName)
     const dropdownTrigger = await within(headerCell).findByRole("button", { name: "Filter" })
     userEvent.click(dropdownTrigger)
     const optionButton = await screen.findByRole("option", { name: filterOption })
@@ -273,5 +328,11 @@ describe("JobsTable", () => {
 
     // Ensure the dropdown is closed
     userEvent.tab()
+  }
+
+  async function toggleSorting(columnDisplayName: string) {
+    const headerCell = await getHeaderCell(columnDisplayName)
+    const sortButton = await within(headerCell).findByRole("button", { name: "Toggle sort" })
+    userEvent.click(sortButton)
   }
 })
