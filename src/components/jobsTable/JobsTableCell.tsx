@@ -17,17 +17,12 @@ const shouldRightAlign = (colSpec: ColumnSpec): boolean => Boolean(colSpec.isNum
 
 export interface HeaderCellProps {
   header: Header<JobRow, unknown>
-  hoveredColumn: ColumnId | undefined
-  onHoverChange: (colId?: ColumnId) => void
 }
-export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellProps) => {
+export const HeaderCell = ({ header }: HeaderCellProps) => {
   const id = header.id as ColumnId
   const colSpec = columnSpecFor(id)
   const isRightAligned = shouldRightAlign(colSpec)
   const sortDirection = header.column.getIsSorted() || "asc"
-
-  // To be used for sorting icons in future
-  const _isHovered = id === hoveredColumn
 
   return (
     <TableCell
@@ -37,8 +32,6 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
         width: `${header.column.getSize()}px`,
         ...sharedCellStyle,
       }}
-      onMouseEnter={() => onHoverChange(id)}
-      onMouseLeave={() => onHoverChange(undefined)}
       aria-label={colSpec.name}
     >
       {header.isPlaceholder ? null : (
