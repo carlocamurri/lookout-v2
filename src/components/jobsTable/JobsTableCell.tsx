@@ -22,7 +22,8 @@ export const HeaderCell = ({ header }: HeaderCellProps) => {
   const id = header.id as ColumnId
   const colSpec = columnSpecFor(id)
   const isRightAligned = shouldRightAlign(colSpec)
-  const sortDirection = header.column.getIsSorted() || "asc"
+  const sortDirection = header.column.getIsSorted()
+  const defaultSortDirection = "asc"
 
   return (
     <TableCell
@@ -36,10 +37,11 @@ export const HeaderCell = ({ header }: HeaderCellProps) => {
     >
       {header.isPlaceholder ? null : (
         <TableSortLabel
-          active={Boolean(header.column.getIsSorted())}
-          direction={sortDirection}
+          active={Boolean(sortDirection)}
+          direction={sortDirection || defaultSortDirection}
           onClick={() => {
-            header.column.toggleSorting(sortDirection !== "desc")
+            const desc = sortDirection ? sortDirection === "asc" : false
+            header.column.toggleSorting(desc)
           }}
           hideSortIcon={!header.column.getCanSort()}
           aria-label={"Toggle sort"}

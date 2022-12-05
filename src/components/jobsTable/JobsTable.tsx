@@ -108,9 +108,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
   useEffect(() => {
     async function fetchData() {
       if (rowsToFetch.length === 0) {
-        console.log("No new rows to fetch")
         return
       }
+      
       const [nextRequest, ...restOfRequests] = rowsToFetch
 
       const parentRowInfo = nextRequest.parentRowId !== "ROOT" ? fromRowId(nextRequest.parentRowId) : undefined

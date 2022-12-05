@@ -236,8 +236,8 @@ describe("JobsTable", () => {
     await waitFor(() => {
       const rows = getAllByRole("row")
       // Skipping header and footer rows
-      expect(rows[1]).toHaveTextContent("queue-2")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
+      expect(rows[1]).toHaveTextContent("queue-1")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
     })
 
     await toggleSorting("Queue")
@@ -246,8 +246,8 @@ describe("JobsTable", () => {
       const rows = getAllByRole("row")
 
       // Order should be reversed now
-      expect(rows[1]).toHaveTextContent("queue-1")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
+      expect(rows[1]).toHaveTextContent("queue-2")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
     })
   })
 
@@ -263,8 +263,8 @@ describe("JobsTable", () => {
     await waitFor(() => {
       const rows = getAllByRole("row")
       // Skipping header and footer rows
-      expect(rows[1]).toHaveTextContent("queue-2")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
+      expect(rows[1]).toHaveTextContent("queue-1")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
     })
 
     await toggleSorting("Queue")
@@ -273,8 +273,8 @@ describe("JobsTable", () => {
       const rows = getAllByRole("row")
 
       // Order should be reversed now
-      expect(rows[1]).toHaveTextContent("queue-1")
-      expect(rows[rows.length - 2]).toHaveTextContent("queue-2")
+      expect(rows[1]).toHaveTextContent("queue-2")
+      expect(rows[rows.length - 2]).toHaveTextContent("queue-1")
     })
   })
 
