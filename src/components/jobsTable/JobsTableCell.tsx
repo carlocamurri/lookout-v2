@@ -1,8 +1,10 @@
 import { KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
 import { TableCell, IconButton } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"
+import _ from "lodash"
 import { JobRow } from "models/jobsTableModels"
 import { ColumnId, ColumnSpec, columnSpecFor } from "utils/jobsTableColumns"
+import { JobsTableFilter } from "./JobsTableFilter"
 
 const sharedCellStyle = {
   padding: "0.5em",
@@ -32,17 +34,27 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
       align={isRightAligned ? "right" : "left"}
       sx={{
         width: `${header.column.getSize()}px`,
-        lineHeight: "2.5em", // Provides enough height for icon buttons
         ...sharedCellStyle,
       }}
       onMouseEnter={() => onHoverChange(id)}
       onMouseLeave={() => onHoverChange(undefined)}
+      aria-label={colSpec.name}
     >
       {header.isPlaceholder ? null : (
         <>
           {flexRender(header.column.columnDef.header, header.getContext())}
           {header.column.getIsGrouped() && <> (# Jobs)</>}
         </>
+      )}
+
+      {header.column.getCanFilter() && colSpec.filterType && (
+        <JobsTableFilter
+          id={header.id}
+          currentFilter={header.column.getFilterValue() as string | string[]}
+          filterType={colSpec.filterType}
+          enumFilterValues={colSpec.enumFitlerValues}
+          onFilterChange={header.column.setFilterValue}
+        />
       )}
     </TableCell>
   )

@@ -198,6 +198,35 @@ describe("JobsTable", () => {
     expect(await findByRole("button", { name: "Reprioritize" })).toBeDisabled()
   })
 
+  it("should allow text filtering", async () => {
+    const { getByRole } = renderComponent()
+    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+    await assertNumDataRowsShown(jobs.length)
+
+    await filterTextColumnTo("Queue", jobs[0].queue)
+    await assertNumDataRowsShown(jobs.filter((j) => j.queue === jobs[0].queue).length)
+
+    await filterTextColumnTo("Job Id", jobs[0].jobId)
+    await assertNumDataRowsShown(1)
+
+    await filterTextColumnTo("Queue", "")
+    await filterTextColumnTo("Job Id", "")
+
+    await assertNumDataRowsShown(jobs.length)
+  })
+
+  it("should allow enum filtering", async () => {
+    const { getByRole } = renderComponent()
+    await waitForElementToBeRemoved(() => getByRole("progressbar"))
+    await assertNumDataRowsShown(jobs.length)
+
+    await toggleEnumFilterOption("State", jobs[0].state)
+    await assertNumDataRowsShown(2)
+
+    await toggleEnumFilterOption("State", jobs[0].state)
+    await assertNumDataRowsShown(jobs.length)
+  })
+
   async function assertNumDataRowsShown(nDataRows: number) {
     await waitFor(async () => {
       const rows = await screen.findAllByRole("row")
@@ -226,5 +255,23 @@ describe("JobsTable", () => {
     const matchingRow = await screen.findByRole("row", { name: "job:" + jobId })
     const checkbox = await within(matchingRow).findByRole("checkbox")
     userEvent.click(checkbox)
+  }
+
+  async function filterTextColumnTo(columnDisplayName: string, filterText: string) {
+    const headerCell = await screen.findByRole("columnheader", { name: columnDisplayName })
+    const filterInput = await within(headerCell).findByRole("textbox", { name: "Filter" })
+    userEvent.clear(filterInput)
+    userEvent.type(filterInput, filterText)
+  }
+
+  async function toggleEnumFilterOption(columnDisplayName: string, filterOption: string) {
+    const headerCell = await screen.findByRole("columnheader", { name: columnDisplayName })
+    const dropdownTrigger = await within(headerCell).findByRole("button", { name: "Filter" })
+    userEvent.click(dropdownTrigger)
+    const optionButton = await screen.findByRole("option", { name: filterOption })
+    userEvent.click(optionButton)
+
+    // Ensure the dropdown is closed
+    userEvent.tab()
   }
 })
