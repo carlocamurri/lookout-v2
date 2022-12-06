@@ -82,27 +82,16 @@ export const mergeSubRows = <
 >(
   existingData: (TNonGroupedRow | TGroupedRow)[],
   newSubRows: (TNonGroupedRow | TGroupedRow)[],
-  locationForSubRows: RowId[],
+  parentRowId: RowId | undefined,
   appendSubRows: boolean,
 ): MergeSubRowsResult<TNonGroupedRow, TGroupedRow> => {
   // Just return if this is the top-level data
-  if (locationForSubRows.length === 0) {
+  if (!parentRowId) {
     return { rootData: newSubRows }
   }
 
   // Otherwise merge it into existing data
-  const rowToModify = locationForSubRows.reduce<TGroupedRow | undefined>(
-    (row, rowIdToFind) => {
-      if (isGroupedRow(row)) {
-        // TODO: Change subRows to a set to optimise this lookup
-        const candidateRow = row.subRows.find((r) => r.rowId === rowIdToFind)
-        if (isGroupedRow(candidateRow)) {
-          return candidateRow
-        }
-      }
-    },
-    { subRows: existingData } as TGroupedRow,
-  )
+  const rowToModify = findRowInData<TNonGroupedRow, TGroupedRow>(existingData, parentRowId)
 
   // Modifies in-place for now
   if (rowToModify) {
@@ -112,8 +101,33 @@ export const mergeSubRows = <
       rowToModify.subRows = newSubRows
     }
   } else {
-    console.warn("Could not find row to merge with path. This is a bug.", locationForSubRows)
+    console.warn("Could not find row to merge with path. This is a bug.", { parentRowId, existingData })
   }
 
   return { rootData: existingData, parentRow: rowToModify }
+}
+
+export const findRowInData = <
+  TNonGroupedRow extends NonGroupedRow,
+  TGroupedRow extends GroupedRow<TNonGroupedRow, TGroupedRow>,
+>(
+  data: (TNonGroupedRow | TGroupedRow)[],
+  rowId: RowId,
+): TGroupedRow | undefined => {
+  const { rowIdPathFromRoot } = fromRowId(rowId)
+
+  const targetRow = rowIdPathFromRoot.reduce<TGroupedRow | undefined>(
+    (row, rowIdToFind) => {
+      if (isGroupedRow(row)) {
+        // TODO: Change subRows to a set to optimise this lookup
+        const candidateRow = row.subRows.find((r) => r.rowId === rowIdToFind)
+        if (isGroupedRow(candidateRow)) {
+          return candidateRow
+        }
+      }
+    },
+    { subRows: data } as TGroupedRow,
+  )
+
+  return targetRow
 }

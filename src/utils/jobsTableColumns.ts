@@ -10,6 +10,7 @@ export type ColumnSpec = {
   selected: boolean
   isAnnotation: boolean
   groupable: boolean
+  sortable: boolean
   filterType?: FilterType
   enumFitlerValues?: string[]
   minSize: number
@@ -28,6 +29,7 @@ const getDefaultColumnSpec = (colId: ColumnId): ColumnSpec => ({
   selected: true,
   isAnnotation: false,
   groupable: false,
+  sortable: false,
   minSize: 30,
 })
 
@@ -40,6 +42,7 @@ const COLUMN_SPECS: ColumnSpec[] = [
     selected: true,
     isAnnotation: false,
     groupable: false,
+    sortable: true,
     filterType: FilterType.Text,
     minSize: 30,
   },
@@ -49,6 +52,7 @@ const COLUMN_SPECS: ColumnSpec[] = [
     selected: true,
     isAnnotation: false,
     groupable: true,
+    sortable: false,
     filterType: FilterType.Text,
     minSize: 100,
   },
@@ -58,6 +62,7 @@ const COLUMN_SPECS: ColumnSpec[] = [
     selected: true,
     isAnnotation: false,
     groupable: true,
+    sortable: false,
     filterType: FilterType.Text,
     minSize: 95,
   },
@@ -67,6 +72,7 @@ const COLUMN_SPECS: ColumnSpec[] = [
     selected: true,
     isAnnotation: false,
     groupable: true,
+    sortable: false,
     filterType: FilterType.Enum,
     enumFitlerValues: Object.values(JobStates).map((s) => s.name),
     minSize: 60,
@@ -77,12 +83,29 @@ const COLUMN_SPECS: ColumnSpec[] = [
     selected: true,
     isAnnotation: false,
     groupable: false,
+    sortable: false,
     minSize: 60,
     isNumeric: true,
     formatter: (cpu) => (cpu ? numFormatter.format(Number(cpu)) : ""),
   },
-  { key: "memory", name: "Memory", selected: true, isAnnotation: false, groupable: false, minSize: 70 },
-  { key: "ephemeralStorage", name: "Eph. Storage", selected: true, isAnnotation: false, groupable: false, minSize: 95 },
+  {
+    key: "memory",
+    name: "Memory",
+    selected: true,
+    isAnnotation: false,
+    groupable: false,
+    sortable: false,
+    minSize: 70,
+  },
+  {
+    key: "ephemeralStorage",
+    name: "Eph. Storage",
+    selected: true,
+    isAnnotation: false,
+    groupable: false,
+    sortable: false,
+    minSize: 95,
+  },
 ]
 
 export const DEFAULT_COLUMNS: ColumnId[] = ["queue", "jobSet", "jobId", "state", "cpu", "memory", "ephemeralStorage"]

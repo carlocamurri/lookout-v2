@@ -78,15 +78,15 @@ describe("ReactTableUtils", () => {
   describe("mergeSubRows", () => {
     let existingData: (NonGroupedRow | GroupedRow<any, any>)[],
       newRows: (NonGroupedRow | GroupedRow<any, any>)[],
-      locationForSubRows: RowId[],
+      parentRowId: RowId | undefined,
       append = false
 
     it("returns given rows if no parent path given", () => {
       existingData = [{ rowId: "fruit:apple" }]
       newRows = [{ rowId: "fruit:banana" }]
-      locationForSubRows = []
+      parentRowId = undefined
 
-      const { rootData, parentRow } = mergeSubRows(existingData, newRows, locationForSubRows, append)
+      const { rootData, parentRow } = mergeSubRows(existingData, newRows, parentRowId, append)
 
       expect(rootData).toStrictEqual(newRows)
       expect(parentRow).toBeUndefined()
@@ -98,9 +98,9 @@ describe("ReactTableUtils", () => {
         { rowId: "fruit:banana", subRows: [] },
       ]
       newRows = [{ rowId: "taste:delicious" }]
-      locationForSubRows = ["fruit:banana"]
+      parentRowId = "fruit:banana"
 
-      const { rootData, parentRow } = mergeSubRows(existingData, newRows, locationForSubRows, append)
+      const { rootData, parentRow } = mergeSubRows(existingData, newRows, parentRowId, append)
 
       expect(rootData).toStrictEqual([
         { rowId: "fruit:apple", subRows: [] },
@@ -115,9 +115,9 @@ describe("ReactTableUtils", () => {
         { rowId: "fruit:banana", subRows: [] },
       ]
       newRows = [{ rowId: "taste:delicious" }]
-      locationForSubRows = ["fruit:avocado"]
+      parentRowId = "fruit:avocado"
 
-      const { rootData, parentRow } = mergeSubRows(existingData, newRows, locationForSubRows, append)
+      const { rootData, parentRow } = mergeSubRows(existingData, newRows, parentRowId, append)
 
       expect(rootData).toStrictEqual(existingData)
       expect(parentRow).toBeUndefined()
@@ -126,10 +126,10 @@ describe("ReactTableUtils", () => {
     it("overrides existing subrows if not appending", () => {
       existingData = [{ rowId: "fruit:apple", subRows: [{ rowId: "color:green" }] }]
       newRows = [{ rowId: "taste:delicious" }]
-      locationForSubRows = ["fruit:apple"]
+      parentRowId = "fruit:apple"
       append = false
 
-      const { rootData, parentRow } = mergeSubRows(existingData, newRows, locationForSubRows, append)
+      const { rootData, parentRow } = mergeSubRows(existingData, newRows, parentRowId, append)
 
       expect(rootData).toStrictEqual([{ rowId: "fruit:apple", subRows: [{ rowId: "taste:delicious" }] }])
       expect(parentRow).toStrictEqual({ rowId: "fruit:apple", subRows: [{ rowId: "taste:delicious" }] })
@@ -138,10 +138,10 @@ describe("ReactTableUtils", () => {
     it("appends existing subrows if appending", () => {
       existingData = [{ rowId: "fruit:apple", subRows: [{ rowId: "color:green" }] }]
       newRows = [{ rowId: "taste:delicious" }]
-      locationForSubRows = ["fruit:apple"]
+      parentRowId = "fruit:apple"
       append = true
 
-      const { rootData, parentRow } = mergeSubRows(existingData, newRows, locationForSubRows, append)
+      const { rootData, parentRow } = mergeSubRows(existingData, newRows, parentRowId, append)
 
       expect(rootData).toStrictEqual([
         { rowId: "fruit:apple", subRows: [{ rowId: "color:green" }, { rowId: "taste:delicious" }] },

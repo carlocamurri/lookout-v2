@@ -25,6 +25,7 @@ import {
   Updater,
   ExpandedState,
   ColumnFiltersState,
+  SortingState,
 } from "@tanstack/react-table"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
@@ -40,35 +41,40 @@ import {
   diffOfKeys,
   updaterToValue,
   convertColumnFiltersToFilters,
+  FetchRowRequest,
+  PendingData,
+  pendingDataForAllVisibleData,
 } from "utils/jobsTableUtils"
 import { ColumnId, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
 import { JobsTableActionBar } from "./JobsTableActionBar"
 import { getSelectedColumnDef, SELECT_COLUMN_ID } from "./SelectedColumn"
-import { useStateWithPrevious } from "hooks/useStateWithPrevious"
 import _ from "lodash"
 import { JobId } from "model"
 import styles from "./JobsTable.module.css"
 
 const DEFAULT_PAGE_SIZE = 30
 
-type JobsPageProps = {
+interface JobsPageProps {
   getJobsService: GetJobsService
   groupJobsService: GroupJobsService
   debug: boolean
 }
 export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageProps) => {
+  // Data
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<JobTableRow[]>([])
+  const [rowsToFetch, setRowsToFetch] = useState<PendingData[]>([{ parentRowId: "ROOT", skip: 0 }])
   const [totalRowCount, setTotalRowCount] = useState(0)
   const [allColumns, setAllColumns] = useState(DEFAULT_COLUMN_SPECS)
 
-  const [grouping, setGrouping, prevGrouping] = useStateWithPrevious<ColumnId[]>(DEFAULT_GROUPING)
-  const [expanded, setExpanded, prevExpanded] = useStateWithPrevious<ExpandedStateList>({})
-  const [newlyExpanded, newlyUnexpanded] = useMemo(
-    () => diffOfKeys<RowId>(expanded, prevExpanded),
-    [expanded, prevExpanded],
-  )
+  // Grouping
+  const [grouping, setGrouping] = useState<ColumnId[]>(DEFAULT_GROUPING)
+
+  // Expanding
+  const [expanded, setExpanded] = useState<ExpandedStateList>({})
+
+  // Selecting
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({})
   const selectedJobs: JobId[] = useMemo(
     () =>
@@ -81,68 +87,48 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     [selectedRows],
   )
 
-  const [pagination, setPagination, prevPagination] = useStateWithPrevious<PaginationState>({
+  // Pagination
+  const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: DEFAULT_PAGE_SIZE,
   })
   const [pageCount, setPageCount] = useState<number>(-1)
   const { pageIndex, pageSize } = useMemo(() => pagination, [pagination])
-  const [subRowToLoadMore, setSubRowToLoadMore] = useState<{ rowId: RowId; skip: number } | undefined>(undefined)
-  const [columnFilterState, setColumnFilterState, prevColumnFilterState] = useStateWithPrevious<ColumnFiltersState>([])
 
-  const [hoveredHeaderColumn, setHoveredHeaderColumn] = useState<ColumnId | undefined>(undefined)
+  // Filtering
+  const [columnFilterState, setColumnFilterState] = useState<ColumnFiltersState>([])
+
+  // Sorting
+  const [sorting, setSorting] = useState<SortingState>([{ id: "jobId", desc: true }])
 
   useEffect(() => {
     async function fetchData() {
-      const filtersUnchanged = _.isEqual(columnFilterState, prevColumnFilterState)
-      const groupingUnchanged = _.isEqual(grouping, prevGrouping)
-      const expandedUnchanged = _.isEqual(expanded, prevExpanded)
-      const paginationUnchanged = _.isEqual(pagination, prevPagination)
-      const noSubRowToLoadMore = subRowToLoadMore === undefined
-
-      // Relying purely on useEffect's dependencies array doesn't work perfectly (e.g. for hot reloads)
-      if (filtersUnchanged && groupingUnchanged && expandedUnchanged && paginationUnchanged && noSubRowToLoadMore) {
-        console.log("Not fetching any data as no relevant state has changed")
+      if (rowsToFetch.length === 0) {
         return
       }
 
-      if (
-        filtersUnchanged &&
-        groupingUnchanged &&
-        paginationUnchanged &&
-        noSubRowToLoadMore &&
-        newlyUnexpanded.length > 0
-      ) {
-        console.log("Not fetching new data since we're only unexpanding")
-        return
-      }
+      const [nextRequest, ...restOfRequests] = rowsToFetch
 
-      const rowsNeedingSubRowsFetched = [subRowToLoadMore?.rowId, ...newlyExpanded].filter(
-        (r): r is RowId => r !== undefined,
-      )
-      if (rowsNeedingSubRowsFetched.length > 1) {
-        console.warn("More than one row needing subrows fetched! This may be a bug.", { newlyExpanded })
-      }
-
-      const rowToLoadSubRowsFor =
-        rowsNeedingSubRowsFetched.length > 0 ? fromRowId(rowsNeedingSubRowsFetched[0]) : undefined
+      const parentRowInfo = nextRequest.parentRowId !== "ROOT" ? fromRowId(nextRequest.parentRowId) : undefined
 
       const groupingLevel = grouping.length
-      const expandedLevel = rowToLoadSubRowsFor ? rowToLoadSubRowsFor.rowIdPathFromRoot.length : 0
+      const expandedLevel = parentRowInfo ? parentRowInfo.rowIdPathFromRoot.length : 0
+      const isJobFetch = expandedLevel === groupingLevel
 
-      const skip = !rowToLoadSubRowsFor ? pageIndex * pageSize : subRowToLoadMore ? subRowToLoadMore.skip : 0
+      const sortedField = sorting[0]
 
-      const rowRequest = {
+      const rowRequest: FetchRowRequest = {
         filters: [
-          ...convertRowPartsToFilters(rowToLoadSubRowsFor?.rowIdPartsPath ?? []),
+          ...convertRowPartsToFilters(parentRowInfo?.rowIdPartsPath ?? []),
           ...convertColumnFiltersToFilters(columnFilterState),
         ],
-        skip,
-        take: pageSize,
+        skip: nextRequest.skip ?? 0,
+        take: nextRequest.take ?? pageSize,
+        order: { field: sortedField.id, direction: sortedField.desc ? "DESC" : "ASC" },
       }
 
       let newData, totalCount
-      if (expandedLevel === groupingLevel) {
+      if (isJobFetch) {
         const { jobs, totalJobs } = await fetchJobs(rowRequest, getJobsService)
         newData = jobsToRows(jobs)
         totalCount = totalJobs
@@ -150,15 +136,15 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
         const groupedCol = grouping[expandedLevel]
         const colsToAggregate = allColumns.filter((c) => c.groupable).map((c) => c.key)
         const { groups, totalGroups } = await fetchJobGroups(rowRequest, groupJobsService, groupedCol, colsToAggregate)
-        newData = groupsToRows(groups, rowToLoadSubRowsFor?.rowId, groupedCol)
+        newData = groupsToRows(groups, parentRowInfo?.rowId, groupedCol)
         totalCount = totalGroups
       }
 
       const { rootData, parentRow } = mergeSubRows<JobRow, JobGroupRow>(
         data,
         newData,
-        rowToLoadSubRowsFor?.rowIdPathFromRoot ?? [],
-        !!subRowToLoadMore,
+        parentRowInfo?.rowId,
+        Boolean(nextRequest.append),
       )
 
       if (parentRow) {
@@ -179,15 +165,15 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
 
       setData([...rootData]) // ReactTable will only re-render if the array identity changes
       setIsLoading(false)
-      setSubRowToLoadMore(undefined)
-      if (rowToLoadSubRowsFor === undefined) {
+      setRowsToFetch(restOfRequests)
+      if (parentRowInfo === undefined) {
         setPageCount(Math.ceil(totalCount / pageSize))
         setTotalRowCount(totalCount)
       }
     }
 
     fetchData().catch(console.error)
-  }, [pagination, subRowToLoadMore, grouping, expanded, columnFilterState])
+  }, [rowsToFetch, pagination, grouping, expanded, columnFilterState, sorting])
 
   const onGroupingChange = useCallback(
     (newState: ColumnId[]) => {
@@ -204,11 +190,14 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       )
 
       setGrouping([...newState])
+
+      // Refetch the root data
+      setRowsToFetch([{ parentRowId: "ROOT", skip: 0 }])
     },
-    [setSelectedRows, setExpanded, setAllColumns, allColumns, setGrouping],
+    [allColumns],
   )
 
-  const onPaginationChange = useCallback(
+  const onRootPaginationChange = useCallback(
     (updater: Updater<PaginationState>) => {
       const newPagination = updaterToValue(updater, pagination)
       // Reset currently expanded/selected when grouping changes
@@ -216,27 +205,31 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       setSelectedRows({})
       setExpanded({})
       setPagination(newPagination)
+
+      // Refetch the root data
+      setRowsToFetch([{ parentRowId: "ROOT", skip: newPagination.pageIndex * pageSize }])
     },
-    [pagination, setPagination, setSelectedRows, setExpanded],
+    [pagination, pageSize],
   )
 
-  const onLoadMoreSubRows = useCallback(
-    (rowId: RowId, skip: number) => {
-      setSubRowToLoadMore({ rowId, skip })
-    },
-    [setSubRowToLoadMore],
-  )
+  const onLoadMoreSubRows = useCallback((rowId: RowId, skip: number) => {
+    setRowsToFetch([{ parentRowId: rowId, skip, append: true }])
+  }, [])
 
   const onExpandedChange = useCallback(
     (updater: Updater<ExpandedState>) => {
       const newExpandedOrBool = updaterToValue(updater, expanded)
-      const newExpanded =
+      const newExpandedState =
         typeof newExpandedOrBool === "boolean"
           ? _.fromPairs(table.getRowModel().flatRows.map((r) => [r.id, true]))
           : newExpandedOrBool
-      setExpanded(newExpanded)
+      const [newlyExpanded, _newlyUnexpanded] = diffOfKeys<RowId>(newExpandedState, expanded)
+      setExpanded(newExpandedState)
+
+      // Fetch subrows for expanded rows
+      setRowsToFetch(newlyExpanded.map((rowId) => ({ parentRowId: rowId, skip: 0 })))
     },
-    [setExpanded, expanded],
+    [expanded],
   )
 
   const onSelectedRowChange = useCallback(
@@ -244,19 +237,29 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       const newSelectedRows = updaterToValue(updater, selectedRows)
       setSelectedRows(newSelectedRows)
     },
-    [setSelectedRows, selectedRows],
+    [selectedRows],
   )
 
   const onFilterChange = useCallback(
     (updater: Updater<ColumnFiltersState>) => {
       const newFilterState = updaterToValue(updater, columnFilterState)
-      console.log(newFilterState)
       setColumnFilterState(newFilterState)
+      setRowsToFetch(pendingDataForAllVisibleData(expanded, data, pageSize))
     },
-    [setColumnFilterState, columnFilterState],
+    [columnFilterState, expanded, data, pageSize],
   )
 
-  // TODO: Refactor and use Tanstack column pinning?
+  const onSortingChange = useCallback(
+    (updater: Updater<SortingState>) => {
+      const newSortingState = updaterToValue(updater, sorting)
+      setSorting(newSortingState)
+
+      // Refetch any expanded subgroups, and root data with updated sorting params
+      setRowsToFetch(pendingDataForAllVisibleData(expanded, data, pageSize, pageIndex * pageSize))
+    },
+    [sorting, expanded, pageIndex, pageSize, data],
+  )
+
   const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(() => {
     return allColumns
       .filter((c) => c.selected)
@@ -267,6 +270,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
           header: c.name,
           enableGrouping: c.groupable,
           enableColumnFilter: c.filterType !== undefined,
+          enableSorting: c.sortable,
           aggregationFn: () => "-",
           minSize: c.minSize,
           size: c.minSize,
@@ -288,6 +292,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       columnPinning: {
         left: [SELECT_COLUMN_ID],
       },
+      sorting,
     },
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,
@@ -311,12 +316,15 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     manualPagination: true,
     pageCount: pageCount,
     paginateExpandedRows: true,
-    onPaginationChange: onPaginationChange,
+    onPaginationChange: onRootPaginationChange,
     getPaginationRowModel: getPaginationRowModel(),
 
     // Filtering
     onColumnFiltersChange: onFilterChange,
     manualFiltering: true,
+
+    // Sorting
+    onSortingChange: onSortingChange,
   })
 
   const topLevelRows = table.getRowModel().rows.filter((row) => row.depth === 0)
@@ -335,12 +343,7 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <HeaderCell
-                    header={header}
-                    hoveredColumn={hoveredHeaderColumn}
-                    onHoverChange={setHoveredHeaderColumn}
-                    key={header.id}
-                  />
+                  <HeaderCell header={header} key={header.id} />
                 ))}
               </TableRow>
             ))}

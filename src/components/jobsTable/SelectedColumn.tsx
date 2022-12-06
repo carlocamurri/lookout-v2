@@ -16,6 +16,7 @@ export const getSelectedColumnDef = (): ColumnDef<JobTableRow> => {
     maxSize: fixedWidthPixels,
     aggregatedCell: undefined,
     enableColumnFilter: false,
+    enableSorting: false,
     header: ({ table }) => {
       return (
         <Checkbox

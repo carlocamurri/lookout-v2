@@ -1,10 +1,42 @@
-import { ColumnFiltersState, Updater } from "@tanstack/react-table"
+import { ColumnFiltersState, ExpandedStateList, Updater } from "@tanstack/react-table"
 import _ from "lodash"
 import { Job, JobFilter, JobGroup, JobOrder, Match } from "model"
-import { JobRow, JobGroupRow } from "models/jobsTableModels"
+import { JobRow, JobGroupRow, JobTableRow } from "models/jobsTableModels"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
-import { RowIdParts, toRowId, RowId } from "./reactTableUtils"
+import { RowIdParts, toRowId, RowId, findRowInData } from "./reactTableUtils"
+
+export interface PendingData {
+  parentRowId: RowId | "ROOT"
+  skip: number
+  take?: number
+  append?: boolean
+}
+
+export const pendingDataForAllVisibleData = (
+  expanded: ExpandedStateList,
+  data: JobTableRow[],
+  defaultPageSize: number,
+  rootSkip = 0,
+): PendingData[] => {
+  const expandedGroups: PendingData[] = Object.keys(expanded).map((rowId) => {
+    const parentRow = findRowInData(data, rowId as RowId)
+    const numSubRows = parentRow?.subRows.length ?? 0
+    return {
+      parentRowId: rowId as RowId,
+      // Retain the same number of rows that are currently shown (unless it's smaller than the page size)
+      // Since these are currently all retreived in one request, they could be slower
+      // if there is a lot of expanded rows
+      take: numSubRows > defaultPageSize ? numSubRows : defaultPageSize,
+      skip: 0,
+    }
+  })
+
+  const rootData: PendingData = { parentRowId: "ROOT" as PendingData["parentRowId"], skip: rootSkip }
+
+  // Fetch the root data first, then any expanded subgroups
+  return [rootData].concat(expandedGroups)
+}
 
 export const convertRowPartsToFilters = (expandedRowIdParts: RowIdParts[]): JobFilter[] => {
   const filters: JobFilter[] = expandedRowIdParts.map(({ type, value }) => ({
@@ -31,11 +63,11 @@ export interface FetchRowRequest {
   filters: JobFilter[]
   skip: number
   take: number
+  order: JobOrder
 }
 export const fetchJobs = async (rowRequest: FetchRowRequest, getJobsService: GetJobsService) => {
-  const { filters, skip, take } = rowRequest
+  const { filters, skip, take, order } = rowRequest
 
-  const order: JobOrder = { field: "jobId", direction: "ASC" }
   return await getJobsService.getJobs(filters, order, skip, take, undefined)
 }
 
@@ -45,9 +77,16 @@ export const fetchJobGroups = async (
   groupedColumn: string,
   columnsToAggregate: string[],
 ) => {
+  console.log({ rowRequest })
   const { filters, skip, take } = rowRequest
+  let { order } = rowRequest
 
-  const order: JobOrder = { field: "name", direction: "ASC" }
+  // API only supports grouping by the group's job count for now
+  order = {
+    field: "count",
+    direction: "DESC",
+  }
+
   return await groupJobsService.groupJobs(filters, order, groupedColumn, columnsToAggregate, skip, take, undefined)
 }
 

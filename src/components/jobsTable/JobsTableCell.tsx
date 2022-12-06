@@ -1,5 +1,5 @@
 import { KeyboardArrowRight, KeyboardArrowDown } from "@mui/icons-material"
-import { TableCell, IconButton } from "@mui/material"
+import { TableCell, IconButton, TableSortLabel } from "@mui/material"
 import { Cell, flexRender, Header } from "@tanstack/react-table"
 import _ from "lodash"
 import { JobRow } from "models/jobsTableModels"
@@ -17,16 +17,13 @@ const shouldRightAlign = (colSpec: ColumnSpec): boolean => Boolean(colSpec.isNum
 
 export interface HeaderCellProps {
   header: Header<JobRow, unknown>
-  hoveredColumn: ColumnId | undefined
-  onHoverChange: (colId?: ColumnId) => void
 }
-export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellProps) => {
+export const HeaderCell = ({ header }: HeaderCellProps) => {
   const id = header.id as ColumnId
   const colSpec = columnSpecFor(id)
   const isRightAligned = shouldRightAlign(colSpec)
-
-  // To be used for sorting icons in future
-  const _isHovered = id === hoveredColumn
+  const sortDirection = header.column.getIsSorted()
+  const defaultSortDirection = "asc"
 
   return (
     <TableCell
@@ -36,15 +33,23 @@ export const HeaderCell = ({ header, hoveredColumn, onHoverChange }: HeaderCellP
         width: `${header.column.getSize()}px`,
         ...sharedCellStyle,
       }}
-      onMouseEnter={() => onHoverChange(id)}
-      onMouseLeave={() => onHoverChange(undefined)}
       aria-label={colSpec.name}
     >
       {header.isPlaceholder ? null : (
-        <>
+        <TableSortLabel
+          active={Boolean(sortDirection)}
+          direction={sortDirection || defaultSortDirection}
+          onClick={() => {
+            const desc = sortDirection ? sortDirection === "asc" : false
+            header.column.toggleSorting(desc)
+          }}
+          hideSortIcon={!header.column.getCanSort()}
+          aria-label={"Toggle sort"}
+          disabled={!header.column.getCanSort()}
+        >
           {flexRender(header.column.columnDef.header, header.getContext())}
           {header.column.getIsGrouped() && <> (# Jobs)</>}
-        </>
+        </TableSortLabel>
       )}
 
       {header.column.getCanFilter() && colSpec.filterType && (
