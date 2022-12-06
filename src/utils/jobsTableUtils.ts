@@ -21,12 +21,13 @@ export const pendingDataForAllVisibleData = (
 ): PendingData[] => {
   const expandedGroups: PendingData[] = Object.keys(expanded).map((rowId) => {
     const parentRow = findRowInData(data, rowId as RowId)
+    const numSubRows = parentRow?.subRows.length ?? 0
     return {
       parentRowId: rowId as RowId,
-      // Retain the same number of rows that are currently shown
+      // Retain the same number of rows that are currently shown (unless it's smaller than the page size)
       // Since these are currently all retreived in one request, they could be slower
       // if there is a lot of expanded rows
-      take: parentRow?.subRows.length ?? defaultPageSize,
+      take: numSubRows > defaultPageSize ? numSubRows : defaultPageSize,
       skip: 0,
     }
   })
