@@ -10,7 +10,7 @@ import { JobsTable } from "./JobsTable"
 import { DEFAULT_COLUMN_SPECS } from "utils/jobsTableColumns"
 
 describe("JobsTable", () => {
-  let numJobs = 5,
+  const numJobs = 5,
     numQueues = 2,
     numJobSets = 3
   let jobs: Job[], getJobsService: GetJobsService, groupJobsService: GroupJobsService
@@ -248,7 +248,6 @@ describe("JobsTable", () => {
 
       // Order should be reversed now
       expect(rows[1]).toHaveTextContent((numJobs - 1).toString())
-      console.log(rows[1].textContent)
       expect(rows[rows.length - 2]).toHaveTextContent("1") // Job ID
     })
   })

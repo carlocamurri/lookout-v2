@@ -1,10 +1,41 @@
-import { ColumnFiltersState, Updater } from "@tanstack/react-table"
+import { ColumnFiltersState, ExpandedStateList, Updater } from "@tanstack/react-table"
 import _ from "lodash"
 import { Job, JobFilter, JobGroup, JobOrder, Match } from "model"
-import { JobRow, JobGroupRow } from "models/jobsTableModels"
+import { JobRow, JobGroupRow, JobTableRow } from "models/jobsTableModels"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
-import { RowIdParts, toRowId, RowId } from "./reactTableUtils"
+import { RowIdParts, toRowId, RowId, findRowInData } from "./reactTableUtils"
+
+export interface PendingData {
+  parentRowId: RowId | "ROOT"
+  skip: number
+  take?: number
+  append?: boolean
+}
+
+export const pendingDataForAllVisibleData = (
+  expanded: ExpandedStateList,
+  data: JobTableRow[],
+  defaultPageSize: number,
+  rootSkip = 0,
+): PendingData[] => {
+  const expandedGroups: PendingData[] = Object.keys(expanded).map((rowId) => {
+    const parentRow = findRowInData(data, rowId as RowId)
+    return {
+      parentRowId: rowId as RowId,
+      // Retain the same number of rows that are currently shown
+      // Since these are currently all retreived in one request, they could be slower
+      // if there is a lot of expanded rows
+      take: parentRow?.subRows.length ?? defaultPageSize,
+      skip: 0,
+    }
+  })
+
+  const rootData: PendingData = { parentRowId: "ROOT" as PendingData["parentRowId"], skip: rootSkip }
+
+  // Fetch the root data first, then any expanded subgroups
+  return [rootData].concat(expandedGroups)
+}
 
 export const convertRowPartsToFilters = (expandedRowIdParts: RowIdParts[]): JobFilter[] => {
   const filters: JobFilter[] = expandedRowIdParts.map(({ type, value }) => ({
@@ -49,11 +80,10 @@ export const fetchJobGroups = async (
   const { filters, skip, take } = rowRequest
   let { order } = rowRequest
 
-  // Always sort by the grouped field when fetching groups
-  // But only respect the direction if the UI is actually sorting by the grouped column
+  // API only supports grouping by the group's job count for now
   order = {
-    field: "name",
-    direction: order.field === groupedColumn ? order.direction : "ASC",
+    field: "count",
+    direction: "DESC",
   }
 
   return await groupJobsService.groupJobs(filters, order, groupedColumn, columnsToAggregate, skip, take, undefined)

@@ -88,8 +88,24 @@ const COLUMN_SPECS: ColumnSpec[] = [
     isNumeric: true,
     formatter: (cpu) => (cpu ? numFormatter.format(Number(cpu)) : ""),
   },
-  { key: "memory", name: "Memory", selected: true, isAnnotation: false, groupable: false, sortable: false, minSize: 70 },
-  { key: "ephemeralStorage", name: "Eph. Storage", selected: true, isAnnotation: false, groupable: false, sortable: false, minSize: 95 },
+  {
+    key: "memory",
+    name: "Memory",
+    selected: true,
+    isAnnotation: false,
+    groupable: false,
+    sortable: false,
+    minSize: 70,
+  },
+  {
+    key: "ephemeralStorage",
+    name: "Eph. Storage",
+    selected: true,
+    isAnnotation: false,
+    groupable: false,
+    sortable: false,
+    minSize: 95,
+  },
 ]
 
 export const DEFAULT_COLUMNS: ColumnId[] = ["queue", "jobSet", "jobId", "state", "cpu", "memory", "ephemeralStorage"]

@@ -30,7 +30,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import GetJobsService from "services/GetJobsService"
 import GroupJobsService from "services/GroupJobsService"
-import { findRowInData, fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
+import { fromRowId, mergeSubRows, RowId } from "utils/reactTableUtils"
 import { JobTableRow, isJobGroupRow, JobRow, JobGroupRow } from "models/jobsTableModels"
 import {
   convertRowPartsToFilters,
@@ -42,6 +42,8 @@ import {
   updaterToValue,
   convertColumnFiltersToFilters,
   FetchRowRequest,
+  PendingData,
+  pendingDataForAllVisibleData,
 } from "utils/jobsTableUtils"
 import { ColumnId, DEFAULT_COLUMN_SPECS, DEFAULT_GROUPING } from "utils/jobsTableColumns"
 import { BodyCell, HeaderCell } from "./JobsTableCell"
@@ -52,13 +54,6 @@ import { JobId } from "model"
 import styles from "./JobsTable.module.css"
 
 const DEFAULT_PAGE_SIZE = 30
-
-interface PendingData {
-  parentRowId: RowId | "ROOT"
-  skip: number
-  take?: number
-  append?: boolean
-}
 
 interface JobsPageProps {
   getJobsService: GetJobsService
@@ -249,9 +244,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
     (updater: Updater<ColumnFiltersState>) => {
       const newFilterState = updaterToValue(updater, columnFilterState)
       setColumnFilterState(newFilterState)
-      setRowsToFetch([{ parentRowId: "ROOT", skip: 0 }])
+      setRowsToFetch(pendingDataForAllVisibleData(expanded, data, pageSize))
     },
-    [columnFilterState],
+    [columnFilterState, expanded, data, pageSize],
   )
 
   const onSortingChange = useCallback(
@@ -260,23 +255,9 @@ export const JobsTable = ({ getJobsService, groupJobsService, debug }: JobsPageP
       setSorting(newSortingState)
 
       // Refetch any expanded subgroups, and root data with updated sorting params
-      const expandedGroups: PendingData[] = Object.keys(expanded).map((rowId) => {
-        const parentRow = findRowInData(data, rowId as RowId)
-        return {
-          parentRowId: rowId as RowId,
-          // Retain the same number of rows that are currently shown
-          // Since these are currently all retreived in one request, they could be slower
-          // if there is a lot of expanded rows
-          take: parentRow?.subRows.length ?? pageSize,
-          skip: 0,
-        }
-      })
-
-      setRowsToFetch(
-        [{ parentRowId: "ROOT" as RowId | "ROOT", skip: pagination.pageIndex * pageSize }].concat(expandedGroups),
-      )
+      setRowsToFetch(pendingDataForAllVisibleData(expanded, data, pageSize, pageIndex * pageSize))
     },
-    [sorting, expanded, pagination, pageSize, data],
+    [sorting, expanded, pageIndex, pageSize, data],
   )
 
   const selectedColumnDefs = useMemo<ColumnDef<JobTableRow>[]>(() => {
